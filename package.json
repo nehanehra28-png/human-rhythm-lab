@@ -1,0 +1,16 @@
+{
+  "name": "human-rhythm-lab",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @hrl/web",
+    "build": "npm run build --workspace @hrl/web",
+    "typecheck": "npm run typecheck --workspace @hrl/web",
+    "test": "node --test apps/web/tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.9"
+  }
+}
