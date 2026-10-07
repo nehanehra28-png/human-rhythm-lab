@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { completedWeeks, programDay } from "../../../lib/program.mjs";
+import { completedWeeks, participantDay } from "../../../lib/program.mjs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 export async function GET(req: Request) {
@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   const db = createClient(url, service, { auth: { persistSession: false } });
   const { data: members, error } = await db
     .from("memberships")
-    .select("user_id,cohort_id,timezone,cohorts(start_date)")
+    .select("user_id,cohort_id,timezone,started_at")
     .eq("role", "participant");
   if (error)
     return Response.json({ error: "Could not load cohorts." }, { status: 500 });
@@ -26,9 +26,8 @@ export async function GET(req: Request) {
     failed = 0;
   // Bound each invocation; subsequent runs pick up unfinished reviews.
   for (const member of members || []) {
-    const cohort = member.cohorts as unknown as { start_date: string };
     for (const week of completedWeeks(
-      programDay(cohort.start_date, member.timezone),
+      participantDay(member.started_at, member.timezone),
     )) {
       if (generated + failed >= 4) break;
       const identity = {

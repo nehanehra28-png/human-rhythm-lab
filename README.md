@@ -2,7 +2,7 @@
 
 A first working Next.js app for a guided 30-day wellness program for invited testers. Local development supports a clearly labeled sample-data preview. Cloud integrations require setup and live verification.
 
-Participants sign in to their own dashboards. A cohort follows the same schedule: 14 days of guided experiences, a midpoint feedback call, 14 days of a shared admin-prepared diet plan, and two closing days. Weekly AI reflections appear directly to participants.
+Participants sign in to their own dashboards. Each participant starts Day 1 when invited and follows their own schedule: 14 days of guided experiences, a midpoint feedback call, 14 days of a shared admin-prepared diet plan, and two closing days. Weekly AI reflections appear directly to participants.
 
 ## Planned stack
 
@@ -47,4 +47,4 @@ The design uses Beautiful UI as a visual reference; no Beautiful UI source compo
 
 ## Verification
 
-TypeScript check, production build, and four calendar/summary tests passed. Browser checks covered saving and refreshing a synthetic check-in, draft visibility, future-day locking, and desktop/mobile layout. Database policies and provider calls remain unverified until services are configured.
+TypeScript check, production build, and ten calendar, personal-timeline, and origin tests passed. Browser checks covered saving and refreshing a synthetic check-in, draft visibility, future-day locking, and desktop/mobile layout. Database policies and provider calls remain unverified until services are configured.

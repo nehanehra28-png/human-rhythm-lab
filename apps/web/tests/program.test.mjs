@@ -1,6 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { programDay, phase, completedWeeks, average } from "../lib/program.mjs";
+import { programDay, participantDay, phase, completedWeeks, average } from "../lib/program.mjs";
+test("participants invited on different dates follow independent timelines", () => {
+  const now = new Date("2026-10-10T12:00:00Z");
+  assert.equal(participantDay("2026-10-10T09:00:00Z", "Europe/Amsterdam", now), 1);
+  assert.equal(participantDay("2026-10-07T09:00:00Z", "Europe/Amsterdam", now), 4);
+  assert.deepEqual(completedWeeks(participantDay("2026-10-03T09:00:00Z", "Europe/Amsterdam", now)), [1]);
+});
+test("invitation date uses the participant timezone and advances at local midnight", () => {
+  const invited = "2026-10-07T00:30:00Z";
+  assert.equal(participantDay(invited, "America/New_York", new Date(invited)), 1);
+  assert.equal(participantDay(invited, "America/New_York", new Date("2026-10-07T04:00:00Z")), 2);
+  assert.equal(participantDay("2026-10-24T22:30:00Z", "Europe/Amsterdam", new Date("2026-10-25T23:30:00Z")), 2);
+});
 test("calendar days stay consistent over Amsterdam daylight saving transition", () => {
   assert.equal(
     programDay(

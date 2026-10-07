@@ -20,6 +20,8 @@ export async function authorized(req: NextRequest) {
     .single();
   if (memberError || !membership)
     throw Error("Your account has not been assigned to a cohort.");
+  if (!membership.started_at)
+    throw Error("Personal timelines need database migration 002_personal_timelines.sql. Ask your administrator to apply it.");
   return { db, user: data.user, membership };
 }
 export function failure(error: unknown) {

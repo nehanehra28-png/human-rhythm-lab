@@ -45,3 +45,11 @@ No repository, project, or deployment has been created by this build.
 Use two test participant accounts and one admin account to verify isolation, private notes, draft/future content restrictions, invitation/password flows, uploads, and one bounded AI call. Confirm local versus shared-time unlocking, group size/start date, privacy disclosure, retention/deletion requests, and final feedback visibility. Automatic retention deletion and self-service export/deletion are not implemented yet. Review clinical program content separately.
 
 Production build and browser preview checks do not verify Supabase policies or real provider behavior. Do not enter real participant data until these checks pass.
+
+## Personal timelines (7 October 2026)
+
+Existing projects must run `supabase/migrations/002_personal_timelines.sql` in the Supabase SQL Editor after migration 001. Copy the SQL contents, not the file path. New projects run both migrations in order. The app deliberately reports a setup error until migration 002 is applied, so browser and database permissions cannot disagree about unlocked days.
+
+New memberships start when the admin sends the invitation. Day 1 is the invitation's local calendar date in the member's timezone (initially UTC until confirmed). Next days unlock at local midnight; changing timezone can shift the calendar boundary, but cannot replace the stored invitation timestamp. Existing members with recorded check-ins, reviews or feedback retain their prior day mapping. Existing members without recorded activity start at migration time. Re-running migration 002 does not reset starts.
+
+Shared published content, the shared diet plan and meeting settings remain group-wide. Individual call scheduling is not implemented. Test two accounts invited on different dates, future-content/media denial, check-in boundaries and personal weekly review eligibility before launch.

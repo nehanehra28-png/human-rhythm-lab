@@ -6,7 +6,7 @@ import {
   sameOrigin,
   mediaReference,
 } from "../../../lib/server";
-import { average, programDay } from "../../../lib/program.mjs";
+import { average, participantDay, dateInZone } from "../../../lib/program.mjs";
 export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     if (m.role === "admin") {
       const { data: members, error: me } = await db
         .from("memberships")
-        .select("user_id,display_name")
+        .select("user_id,display_name,started_at,timezone")
         .eq("cohort_id", m.cohort_id)
         .eq("role", "participant");
       const { data: entries, error: ce } = await db
@@ -63,6 +63,7 @@ export async function GET(req: NextRequest) {
         );
         return {
           name: person.display_name || person.user_id,
+          day: participantDay(person.started_at, person.timezone),
           count: rows.length,
           completed: rows.filter((r) => r.status === "completed").length,
           mood: average(rows.map((c) => c.mood)),
@@ -77,7 +78,8 @@ export async function GET(req: NextRequest) {
       participants,
       store: {
         settings: {
-          start: cohort.start_date,
+          start: dateInZone(new Date(m.started_at), m.timezone),
+          startedAt: m.started_at,
           timezone: m.timezone,
           meeting: cohort.meeting_url || "",
           meetingTime: cohort.meeting_time || "",
@@ -108,13 +110,7 @@ export async function POST(req: NextRequest) {
     const { action, payload: p } = JSON.parse(body);
     let error;
     if (action === "checkin") {
-      const { data: cohort } = await db
-        .from("cohorts")
-        .select("start_date")
-        .eq("id", m.cohort_id)
-        .single();
-      if (!cohort) throw Error("Cohort not found.");
-      const today = programDay(cohort.start_date, m.timezone);
+      const today = participantDay(m.started_at, m.timezone);
       if (
         !Number.isInteger(p.day) ||
         p.day < 1 ||
@@ -222,35 +218,26 @@ export async function POST(req: NextRequest) {
     } else if (action === "settings") {
       if (m.role !== "admin") throw Error("Admin access required.");
       if (
-        !/^\d{4}-\d{2}-\d{2}$/.test(p.start) ||
-        !Number.isFinite(Date.parse(p.start)) ||
         typeof p.diet !== "string" ||
         p.diet.length > 10000 ||
         typeof p.meeting !== "string" ||
         p.meeting.length > 2000 ||
         (p.meeting && !/^https:\/\//.test(p.meeting))
       )
-        throw Error("Check the date, diet plan, and HTTPS meeting link.");
+        throw Error("Check the diet plan and HTTPS meeting link.");
       const meetingTime = p.meetingTime
         ? new Date(p.meetingTime).toISOString()
         : null;
       ({ error } = await db
         .from("cohorts")
         .update({
-          start_date: p.start,
           meeting_url: p.meeting,
           meeting_time: meetingTime,
           diet_plan: p.diet,
         })
         .eq("id", m.cohort_id));
     } else if (action === "feedback") {
-      const { data: cohort } = await db
-        .from("cohorts")
-        .select("start_date")
-        .eq("id", m.cohort_id)
-        .single();
-      if (!cohort) throw Error("Cohort not found.");
-      if (programDay(cohort.start_date, m.timezone) < 29)
+      if (participantDay(m.started_at, m.timezone) < 29)
         throw Error("Closing feedback opens on day 29.");
       if (
         !Number.isInteger(p.rating) ||

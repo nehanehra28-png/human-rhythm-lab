@@ -4,7 +4,7 @@ Read README.md and docs/DECISIONS.md before implementation. This workspace conta
 
 ## Product and security rules
 
-- Preserve the shared cohort schedule and participant/admin roles.
+- Preserve personal invitation-based timelines, shared cohort content, and participant/admin roles.
 - Enforce participant ownership and admin authorization server-side on every operation.
 - Keep OpenRouter keys and calls server-side.
 - AI reflects on recorded data; it does not diagnose or prescribe diets, hydration, or treatment.

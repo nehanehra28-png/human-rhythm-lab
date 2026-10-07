@@ -17,6 +17,9 @@ export function programDay(start, timezone, now = new Date()) {
     ) + 1
   );
 }
+export function participantDay(startedAt, timezone, now = new Date()) {
+  return programDay(dateInZone(new Date(startedAt), timezone), timezone, now);
+}
 export function phase(day) {
   return day < 1
     ? "Not started"

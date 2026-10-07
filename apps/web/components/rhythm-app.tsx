@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import type { CheckIn, Experience, Store } from "../lib/types";
 import { initialStore } from "../lib/demo";
-import { programDay, phase, average, completedWeeks } from "../lib/program.mjs";
+import { programDay, participantDay, phase, average, completedWeeks } from "../lib/program.mjs";
 import { supabase } from "../lib/supabase";
 type View = "today" | "program" | "week" | "admin" | "account";
 const blankExperience: Experience = {
@@ -65,6 +65,7 @@ export default function RhythmApp() {
     [participants, setParticipants] = useState<
       {
         name: string;
+        day: number;
         count: number;
         completed: number;
         mood: number | null;
@@ -120,7 +121,9 @@ export default function RhythmApp() {
     } else if (!demo) setStore(null);
   }, [token, demo]);
   const day = store
-    ? programDay(store.settings.start, store.settings.timezone)
+    ? store.settings.startedAt
+      ? participantDay(store.settings.startedAt, store.settings.timezone)
+      : programDay(store.settings.start, store.settings.timezone)
     : 1;
   const current = Math.min(30, Math.max(1, day));
   const shown = selectedDay ?? current;
@@ -472,7 +475,7 @@ export default function RhythmApp() {
                   </h2>
                   <p>
                     {day < 1
-                      ? "Your group will begin together on the start date."
+                      ? "Your personal program starts when you are invited."
                       : "No perfect scores. Just a little curiosity, every day."}
                   </p>
                   <div className="journey-progress">
@@ -1128,6 +1131,7 @@ export default function RhythmApp() {
                       <thead>
                         <tr>
                           <th>Participant</th>
+                          <th>Program day</th>
                           <th>Check-ins</th>
                           <th>Completed</th>
                           <th>Mood</th>
@@ -1139,6 +1143,7 @@ export default function RhythmApp() {
                         {participants.map((p) => (
                           <tr key={p.name}>
                             <td>{p.name}</td>
+                            <td>{p.day > 30 ? "Complete" : `Day ${p.day}`}</td>
                             <td>{p.count}</td>
                             <td>{p.completed}</td>
                             <td>{p.mood?.toFixed(1) || "—"}</td>
@@ -1349,7 +1354,7 @@ export default function RhythmApp() {
                 </section>
                 <section className="card">
                   <h2>Program settings</h2>
-                  <p>A shared start date. A personal rhythm.</p>
+                  <p>Each participant starts at Day 1 when invited. Content is shared; timelines are personal.</p>
                   <form
                     className="admin-form"
                     onSubmit={(e) => {
@@ -1357,7 +1362,6 @@ export default function RhythmApp() {
                       const f = new FormData(e.currentTarget);
                       const settings = {
                         ...store.settings,
-                        start: String(f.get("start")),
                         meeting: String(f.get("meeting")),
                         meetingTime: String(f.get("meetingTime")),
                         diet: String(f.get("diet")),
@@ -1365,15 +1369,6 @@ export default function RhythmApp() {
                       mutate("settings", settings, { ...store, settings });
                     }}
                   >
-                    <label>
-                      Cohort start date
-                      <input
-                        type="date"
-                        name="start"
-                        defaultValue={store.settings.start}
-                        required
-                      />
-                    </label>
                     <label>
                       Feedback meeting link
                       <input

@@ -1,11 +1,11 @@
 # Decisions and open questions
 
-Updated: 6 October 2026.
+Updated: 7 October 2026.
 
 ## Confirmed
 
 - Invited testers with email/password accounts and personal dashboards.
-- A group follows one shared start date for a 30-day program.
+- Each participant begins a personal 30-day timeline when invited. Content remains shared within the group.
 - Days 1–14 guided experiences, a midpoint feedback call, days 15–28 a shared admin-prepared diet plan, and days 29–30 closing review/feedback.
 - The team creates written content, video, and infographics; an admin publishes them.
 - Content unlocks daily; previous experiences remain accessible.
@@ -17,11 +17,11 @@ Updated: 6 October 2026.
 - Warm green styling based on the Beautiful UI reference.
 - Next.js monorepo, server-side OpenRouter, GitHub, Vercel.
 - Builder chooses account/database/media services: Supabase selected.
-- GitHub, Vercel, OpenRouter, and Supabase accounts/projects still need setup.
+- Supabase and GitHub are connected. A Vercel deployment exists; configuration and AI setup remain pending.
 
 ## Provisional implementation defaults
 
-- Unlock at each participant's local midnight. Shared-time versus local-time unlock remains unresolved.
+- Unlock at each participant's local midnight, relative to the invitation timestamp in their confirmed timezone.
 - One editable check-in per cohort day; scores range 1–5.
 - Completed/partially completed/skipped responses, without failure labels.
 - Personal custom rituals can be recorded in the daily check-in; reusable custom habit definitions are deferred.
@@ -34,7 +34,7 @@ Updated: 6 October 2026.
 
 ## Open decisions before pilot launch
 
-- Actual group size and start date; late-join rules; exact unlock synchronization.
+- Actual group size; invitation delivery delays; whether to later change the trigger to first accepted invitation instead of invitation creation.
 - Midpoint call date/time/link; final reviewed experience/diet/media content.
 - OpenRouter model, budget, routing/data practices, and disclosure.
 - Closing feedback sharing and whether a final AI summary is needed.
@@ -43,4 +43,4 @@ Updated: 6 October 2026.
 
 ## Implementation status
 
-Local prototype works with labeled sample data and browser storage. Supabase sign-in, invitation, score/note storage, private media, and scheduled AI routes are written, but no Supabase migration or live provider test has run. See README.md and SETUP.md for verification and setup. Do not treat preview checks as cloud-security verification.
+Live admin sign-in and publication are verified; invitation delivery, media, isolation and AI testing remain pending. Personal timeline migration 002 must be applied to the existing Supabase project. See README.md and SETUP.md for verification and setup. Do not treat preview checks as cloud-security verification.

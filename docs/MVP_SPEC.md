@@ -6,11 +6,11 @@ Invited testers sign in to personal dashboards; admins access an authorized mana
 
 Acceptance: unauthenticated access is rejected; participants cannot read others' records by changing identifiers; admin access is verified server-side.
 
-## Shared program timeline
+## Personal program timelines
 
-One cohort start date governs days 1–14 experiences, days 15–28 diet, and days 29–30 closing review/feedback. Configure the midpoint call separately.
+Each membership has a server-controlled invitation start timestamp. Its local calendar date governs days 1–14 experiences, days 15–28 diet, and days 29–30 closing review/feedback. A new invite starts Day 1 independently of other members. Configure the midpoint call separately.
 
-Acceptance: all members see a consistent day and phase; pre-start and completed states work. Cohort timezone must be selected. Daily unlocking is confirmed; exact local-time synchronization and late-join behavior remain open.
+Acceptance: two participants invited on different dates see their own day and phase. Content, media, check-ins, closing feedback and weekly reviews use the same personal timeline. New invitations begin at Day 1; future days stay locked. Participants confirm timezone. Invitation timestamps cannot be edited by participants.
 
 ## Experiences and media
 

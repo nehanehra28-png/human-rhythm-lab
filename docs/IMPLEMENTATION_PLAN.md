@@ -2,7 +2,7 @@
 
 1. Resolve unlock policy, notes visibility, diet tracking, cohort timezone, late joining, scales, weekly trigger, closing feedback, and UI library. Review program content separately.
 2. Select auth/database/media providers, package manager, current versions, OpenRouter model/settings, GitHub repository, and Vercel project. Verify official documentation and licenses when selecting.
-3. Scaffold the monorepo; implement invitations, accounts, isolation, admin roles, shared schedule, and draft/published media content. Verify access and calendar boundaries.
+3. Scaffold the monorepo; implement invitations, accounts, isolation, admin roles, personal invitation-based schedule, and draft/published media content. Verify access and calendar boundaries.
 4. Build dashboard, check-ins, habits, experience responses, shared diet content, charts, and meeting link. Validate persistence, partial data, mobile use, and accessibility.
 5. Add weekly AI with minimized payloads, output validation, usage controls, retries, and closing feedback. Verify data isolation and instruction boundaries with synthetic data.
 6. Finalize reviewed content, privacy disclosures, access, retention/deletion, and media/call configuration. Run relevant checks, push to the selected GitHub repository, deploy to Vercel, and verify production flows before invitations.

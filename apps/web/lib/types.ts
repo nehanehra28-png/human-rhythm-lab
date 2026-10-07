@@ -24,6 +24,7 @@ export type Experience = {
 };
 export type Settings = {
   start: string;
+  startedAt?: string;
   timezone: string;
   meeting: string;
   meetingTime: string;
