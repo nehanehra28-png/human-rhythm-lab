@@ -51,6 +51,8 @@ const habits = [
   { name: "Bedtime routine", icon: Moon },
 ];
 export default function RhythmApp() {
+  const [forgotPassword, setForgotPassword] = useState(false);
+  const [recoveringPassword, setRecoveringPassword] = useState(false);
   const [store, setStore] = useState<Store | null>(null),
     [view, setView] = useState<View>("today"),
     [role, setRole] = useState("participant"),
@@ -100,7 +102,11 @@ export default function RhythmApp() {
       setReady(true);
       return;
     }
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setRecoveringPassword(true);
+        setMessage("");
+      }
       setToken(session?.access_token || "");
       setReady(true);
     });
@@ -181,6 +187,48 @@ export default function RhythmApp() {
     });
     setMessage(error ? "Sign-in failed. Check your email and password." : "");
     setBusy(false);
+  }
+  async function requestPasswordReset(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const email = String(new FormData(e.currentTarget).get("email")).trim();
+    setBusy(true);
+    setMessage("");
+    try {
+      const { error } = await supabase!.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin,
+      });
+      setMessage(error
+        ? "Could not send the reset email. Please try again shortly."
+        : "If this email has an account, you’ll receive a password reset link. Check your inbox and spam folder.");
+    } catch {
+      setMessage("Could not send the reset email. Please try again shortly.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function resetPassword(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    const password = String(form.get("password"));
+    if (password !== String(form.get("confirmPassword"))) {
+      setMessage("Your passwords do not match.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase!.auth.updateUser({ password });
+      if (error) {
+        setMessage("Could not update your password. Try again or request a new reset link.");
+      } else {
+        setRecoveringPassword(false);
+        setView("account");
+        setMessage("Password updated.");
+      }
+    } catch {
+      setMessage("Could not update your password. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   }
   async function media(file: File, kind: "video" | "infographic") {
     if (demo) {
@@ -268,6 +316,22 @@ export default function RhythmApp() {
         </div>
       </main>
     );
+  if (recoveringPassword && token)
+    return (
+      <main className="login">
+        <div className="login-card">
+          <Leaf />
+          <h1>Choose a new password</h1>
+          <form onSubmit={resetPassword}>
+            <label>New password<input name="password" type="password" minLength={12} required autoComplete="new-password" /></label>
+            <p className="small">Use at least 12 characters.</p>
+            <label>Confirm new password<input name="confirmPassword" type="password" minLength={12} required autoComplete="new-password" /></label>
+            <button className="primary" disabled={busy}>Update password</button>
+          </form>
+          <p role="status">{message}</p>
+        </div>
+      </main>
+    );
   if (!demo && !store)
     return (
       <main className="login">
@@ -277,16 +341,16 @@ export default function RhythmApp() {
         <div className="login-card">
           <span className="eyebrow">YOUR 30-DAY EXPERIENCE</span>
           <h1>
-            Welcome back.
-            <br />A little more in tune.
+            {forgotPassword ? "Reset your password." : "Welcome back."}
+            {!forgotPassword && <><br />A little more in tune.</>}
           </h1>
-          <p>Sign in with your invited email address.</p>
-          <form onSubmit={login}>
+          <p>{forgotPassword ? "Enter your invited email address to receive a reset link." : "Sign in with your invited email address."}</p>
+          <form onSubmit={forgotPassword ? requestPasswordReset : login}>
             <label>
               Email
               <input name="email" type="email" required autoComplete="email" />
             </label>
-            <label>
+            {!forgotPassword && <label>
               Password
               <input
                 name="password"
@@ -294,11 +358,15 @@ export default function RhythmApp() {
                 required
                 autoComplete="current-password"
               />
-            </label>
+            </label>}
             <button className="primary" disabled={busy}>
-              Sign in <ArrowRight size={18} />
+              {forgotPassword ? "Send reset link" : "Sign in"} <ArrowRight size={18} />
             </button>
           </form>
+          <button type="button" disabled={busy} onClick={() => {
+            setForgotPassword(!forgotPassword);
+            setMessage("");
+          }}>{forgotPassword ? "Back to sign in" : "Forgot password?"}</button>
           <p role="status">{message}</p>
           <p className="small">
             Joining from an invitation? Use the email link first to access your
