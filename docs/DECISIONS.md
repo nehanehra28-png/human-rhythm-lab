@@ -1,10 +1,10 @@
 # Decisions and open questions
 
-Updated: 7 October 2026.
+Updated: 13 October 2026.
 
 ## Confirmed
 
-- Invited testers with email/password accounts and personal dashboards.
+- Invited testers with passwordless email or phone OTP sign-in and personal dashboards. Email invitations activate accounts; the existing dashboard remains the first page after authentication. Phone numbers must be linked to the same invited account.
 - Each participant begins a personal 30-day timeline when invited. Content remains shared within the group.
 - Days 1–14 guided experiences, a midpoint feedback call, days 15–28 a shared admin-prepared diet plan, and days 29–30 closing review/feedback.
 - The team creates written content, video, and infographics; an admin publishes them.

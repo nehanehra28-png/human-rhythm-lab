@@ -2,7 +2,7 @@
 
 ## Invitations and accounts
 
-Invited testers sign in to personal dashboards; admins access an authorized management area. Supabase email/password sign-in and admin invitations are implemented; provider setup and live testing are pending.
+Invited testers sign in to personal dashboards; admins access an authorized management area. Supabase email/phone OTP sign-in and admin invitations are implemented; provider setup and live testing are pending.
 
 Acceptance: unauthenticated access is rejected; participants cannot read others' records by changing identifiers; admin access is verified server-side.
 

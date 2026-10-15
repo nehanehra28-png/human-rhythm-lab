@@ -28,8 +28,15 @@ import {
 } from "lucide-react";
 import type { CheckIn, Experience, Store } from "../lib/types";
 import { initialStore } from "../lib/demo";
-import { programDay, participantDay, phase, average, completedWeeks } from "../lib/program.mjs";
+import {
+  programDay,
+  participantDay,
+  phase,
+  average,
+  completedWeeks,
+} from "../lib/program.mjs";
 import { supabase } from "../lib/supabase";
+import PhoneSignIn from "./phone-sign-in";
 type View = "today" | "program" | "week" | "admin" | "account";
 const blankExperience: Experience = {
   day: 1,
@@ -51,8 +58,9 @@ const habits = [
   { name: "Bedtime routine", icon: Moon },
 ];
 export default function RhythmApp() {
-  const [forgotPassword, setForgotPassword] = useState(false);
-  const [recoveringPassword, setRecoveringPassword] = useState(false);
+  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
+  const [otpDestination, setOtpDestination] = useState("");
+  const [resendAt, setResendAt] = useState(0);
   const [store, setStore] = useState<Store | null>(null),
     [view, setView] = useState<View>("today"),
     [role, setRole] = useState("participant"),
@@ -102,11 +110,7 @@ export default function RhythmApp() {
       setReady(true);
       return;
     }
-    const { data } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY") {
-        setRecoveringPassword(true);
-        setMessage("");
-      }
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       setToken(session?.access_token || "");
       setReady(true);
     });
@@ -177,55 +181,64 @@ export default function RhythmApp() {
       setBusy(false);
     }
   }
-  async function login(e: React.FormEvent<HTMLFormElement>) {
+  async function sendOtp(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setBusy(true);
-    const f = new FormData(e.currentTarget);
-    const { error } = await supabase!.auth.signInWithPassword({
-      email: String(f.get("email")),
-      password: String(f.get("password")),
-    });
-    setMessage(error ? "Sign-in failed. Check your email and password." : "");
-    setBusy(false);
-  }
-  async function requestPasswordReset(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const email = String(new FormData(e.currentTarget).get("email")).trim();
+    if (busy) return;
+    if (Date.now() < resendAt) {
+      setMessage("Please wait a minute before requesting another code.");
+      return;
+    }
+    const destination =
+      otpDestination ||
+      String(new FormData(e.currentTarget).get("destination")).trim();
+    if (loginMethod === "phone" && !/^\+[1-9]\d{7,14}$/.test(destination)) {
+      setMessage(
+        "Enter your phone number with country code, for example +31612345678.",
+      );
+      return;
+    }
     setBusy(true);
     setMessage("");
     try {
-      const { error } = await supabase!.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin,
-      });
-      setMessage(error
-        ? "Could not send the reset email. Please try again shortly."
-        : "If this email has an account, you’ll receive a password reset link. Check your inbox and spam folder.");
+      const options = { shouldCreateUser: false };
+      const { error } = await supabase!.auth.signInWithOtp(
+        loginMethod === "email"
+          ? { email: destination, options }
+          : { phone: destination, options },
+      );
+      if (error) throw error;
+      setOtpDestination(destination);
+      setResendAt(Date.now() + 60_000);
+      setMessage(
+        "If this email or number is registered, a code is on its way. Check your inbox or messages.",
+      );
     } catch {
-      setMessage("Could not send the reset email. Please try again shortly.");
+      setMessage(
+        "Could not send a code. Check your details or try again shortly.",
+      );
     } finally {
       setBusy(false);
     }
   }
-  async function resetPassword(e: React.FormEvent<HTMLFormElement>) {
+  async function verifyOtp(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    const password = String(form.get("password"));
-    if (password !== String(form.get("confirmPassword"))) {
-      setMessage("Your passwords do not match.");
-      return;
-    }
+    if (busy) return;
+    const code = String(new FormData(e.currentTarget).get("code")).trim();
     setBusy(true);
+    setMessage("");
     try {
-      const { error } = await supabase!.auth.updateUser({ password });
-      if (error) {
-        setMessage("Could not update your password. Try again or request a new reset link.");
-      } else {
-        setRecoveringPassword(false);
-        setView("account");
-        setMessage("Password updated.");
-      }
+      const { error } = await supabase!.auth.verifyOtp(
+        loginMethod === "email"
+          ? { email: otpDestination, token: code, type: "email" }
+          : { phone: otpDestination, token: code, type: "sms" },
+      );
+      if (error) throw error;
+      setOtpDestination("");
+      setView("today");
     } catch {
-      setMessage("Could not update your password. Please try again.");
+      setMessage(
+        "That code is invalid or expired. Try again or request a new code.",
+      );
     } finally {
       setBusy(false);
     }
@@ -316,22 +329,6 @@ export default function RhythmApp() {
         </div>
       </main>
     );
-  if (recoveringPassword && token)
-    return (
-      <main className="login">
-        <div className="login-card">
-          <Leaf />
-          <h1>Choose a new password</h1>
-          <form onSubmit={resetPassword}>
-            <label>New password<input name="password" type="password" minLength={12} required autoComplete="new-password" /></label>
-            <p className="small">Use at least 12 characters.</p>
-            <label>Confirm new password<input name="confirmPassword" type="password" minLength={12} required autoComplete="new-password" /></label>
-            <button className="primary" disabled={busy}>Update password</button>
-          </form>
-          <p role="status">{message}</p>
-        </div>
-      </main>
-    );
   if (!demo && !store)
     return (
       <main className="login">
@@ -341,36 +338,115 @@ export default function RhythmApp() {
         <div className="login-card">
           <span className="eyebrow">YOUR 30-DAY EXPERIENCE</span>
           <h1>
-            {forgotPassword ? "Reset your password." : "Welcome back."}
-            {!forgotPassword && <><br />A little more in tune.</>}
+            {otpDestination ? "Check your code." : "Welcome back."}
+            <br />A little more in tune.
           </h1>
-          <p>{forgotPassword ? "Enter your invited email address to receive a reset link." : "Sign in with your invited email address."}</p>
-          <form onSubmit={forgotPassword ? requestPasswordReset : login}>
-            <label>
-              Email
-              <input name="email" type="email" required autoComplete="email" />
-            </label>
-            {!forgotPassword && <label>
-              Password
-              <input
-                name="password"
-                type="password"
-                required
-                autoComplete="current-password"
-              />
-            </label>}
-            <button className="primary" disabled={busy}>
-              {forgotPassword ? "Send reset link" : "Sign in"} <ArrowRight size={18} />
-            </button>
-          </form>
-          <button type="button" disabled={busy} onClick={() => {
-            setForgotPassword(!forgotPassword);
-            setMessage("");
-          }}>{forgotPassword ? "Back to sign in" : "Forgot password?"}</button>
-          <p role="status">{message}</p>
+          <p>
+            {otpDestination
+              ? `Enter the code sent to ${otpDestination}.`
+              : "Sign in with a one-time code sent to your invited email or registered phone number. No password needed."}
+          </p>
+          {token ? (
+            <>
+              <p role="status">{message || "Opening your dashboard…"}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  void supabase!.auth.signOut();
+                  setMessage("");
+                }}
+              >
+                Back to sign in
+              </button>
+            </>
+          ) : (
+            <>
+              {!otpDestination && (
+                <label>
+                  Send a one-time code via
+                  <select
+                    value={loginMethod}
+                    disabled={busy}
+                    onChange={(e) => {
+                      setLoginMethod(e.target.value as "email" | "phone");
+                      setMessage("");
+                    }}
+                  >
+                    <option value="email">Email</option>
+                    <option value="phone">Phone</option>
+                  </select>
+                </label>
+              )}
+              <form onSubmit={otpDestination ? verifyOtp : sendOtp}>
+                {otpDestination ? (
+                  <label>
+                    One-time code
+                    <input
+                      key="code"
+                      name="code"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]{6,10}"
+                      minLength={6}
+                      maxLength={10}
+                      autoComplete="one-time-code"
+                      required
+                      autoFocus
+                      disabled={busy}
+                    />
+                  </label>
+                ) : (
+                  <label>
+                    {loginMethod === "email" ? "Email" : "Phone number"}
+                    <input
+                      key={loginMethod}
+                      name="destination"
+                      type={loginMethod === "email" ? "email" : "tel"}
+                      autoComplete={loginMethod === "email" ? "email" : "tel"}
+                      placeholder={
+                        loginMethod === "phone" ? "+31612345678" : undefined
+                      }
+                      maxLength={254}
+                      required
+                      disabled={busy}
+                    />
+                  </label>
+                )}
+                <button className="primary" disabled={busy}>
+                  {busy
+                    ? "Please wait…"
+                    : otpDestination
+                      ? "Verify and sign in"
+                      : "Send one-time code"}{" "}
+                  <ArrowRight size={18} />
+                </button>
+              </form>
+              {otpDestination && (
+                <>
+                  <form onSubmit={sendOtp}>
+                    <button type="submit" disabled={busy}>
+                      Resend code
+                    </button>
+                  </form>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      setOtpDestination("");
+                      setMessage("");
+                    }}
+                  >
+                    Use a different email or phone
+                  </button>
+                </>
+              )}
+              <p role="status">{message}</p>
+            </>
+          )}
           <p className="small">
-            Joining from an invitation? Use the email link first to access your
-            account and set a password.
+            Joining for the first time? Open the invitation received by email to
+            activate your account and go straight to your dashboard. No password
+            needed.
           </p>
         </div>
       </main>
@@ -1422,7 +1498,10 @@ export default function RhythmApp() {
                 </section>
                 <section className="card">
                   <h2>Program settings</h2>
-                  <p>Each participant starts at Day 1 when invited. Content is shared; timelines are personal.</p>
+                  <p>
+                    Each participant starts at Day 1 when invited. Content is
+                    shared; timelines are personal.
+                  </p>
                   <form
                     className="admin-form"
                     onSubmit={(e) => {
@@ -1541,43 +1620,7 @@ export default function RhythmApp() {
                   is confirmed.
                 </p>
               </section>
-              {!demo && (
-                <section className="card account-card">
-                  <h2>Set or change your password</h2>
-                  <form
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      const password = String(
-                        new FormData(e.currentTarget).get("password"),
-                      );
-                      setBusy(true);
-                      const { error } = await supabase!.auth.updateUser({
-                        password,
-                      });
-                      setMessage(
-                        error
-                          ? "Could not update your password."
-                          : "Password updated.",
-                      );
-                      setBusy(false);
-                    }}
-                  >
-                    <label>
-                      New password
-                      <input
-                        type="password"
-                        name="password"
-                        minLength={12}
-                        required
-                        autoComplete="new-password"
-                      />
-                    </label>
-                    <button className="primary" disabled={busy}>
-                      Update password
-                    </button>
-                  </form>
-                </section>
-              )}
+              {!demo && <PhoneSignIn />}
               <section className="card account-card">
                 <h2>Your data</h2>
                 <p>
