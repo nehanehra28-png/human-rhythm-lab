@@ -855,7 +855,6 @@ export default function RhythmApp() {
                                   >
                                     {emoji}
                                   </span>
-                                  {label}
                                 </button>
                               );
                             })}
