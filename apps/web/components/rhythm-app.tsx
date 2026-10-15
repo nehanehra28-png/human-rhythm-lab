@@ -826,14 +826,14 @@ export default function RhythmApp() {
                           <div className="rating-options">
                             {(k === "mood"
                               ? [
-                                  { label: "Good", emoji: "🙂", value: 5 },
-                                  { label: "Neutral", emoji: "😐", value: 3 },
                                   { label: "Bad", emoji: "🙁", value: 1 },
+                                  { label: "Neutral", emoji: "😐", value: 3 },
+                                  { label: "Good", emoji: "🙂", value: 5 },
                                 ]
                               : [
-                                  { label: "High", emoji: "⚡", value: 5 },
-                                  { label: "Medium", emoji: "🔋", value: 3 },
                                   { label: "Low", emoji: "🪫", value: 1 },
+                                  { label: "Medium", emoji: "🔋", value: 3 },
+                                  { label: "High", emoji: "⚡", value: 5 },
                                 ]
                             ).map(({ label, emoji, value }) => {
                               const selected =
