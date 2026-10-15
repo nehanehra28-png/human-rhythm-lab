@@ -822,31 +822,37 @@ export default function RhythmApp() {
                             {k === "mood"
                               ? "How is your mood?"
                               : "How is your energy?"}
-                            <span>{form[k]}/5</span>
                           </label>
                           <div className="rating-options">
-                            {[1, 2, 3, 4, 5].map((n) => (
-                              <button
-                                type="button"
-                                aria-label={`${k} ${n} out of 5`}
-                                aria-pressed={form[k] === n}
-                                key={n}
-                                onClick={() => setForm({ ...form, [k]: n })}
-                                className={form[k] === n ? "chosen" : ""}
-                              >
-                                {k === "mood" ? (
-                                  ["◡", "⌣", "—", "☺", "☀"][n - 1]
-                                ) : (
-                                  <span>{"▮".repeat(n)}</span>
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                          <div className="range-labels">
-                            <span>{k === "mood" ? "Low" : "Resting"}</span>
-                            <span>
-                              {k === "mood" ? "Bright" : "Full of energy"}
-                            </span>
+                            {(k === "mood"
+                              ? [
+                                  { label: "Good", value: 5 },
+                                  { label: "Neutral", value: 3 },
+                                  { label: "Bad", value: 1 },
+                                ]
+                              : [
+                                  { label: "High", value: 5 },
+                                  { label: "Medium", value: 3 },
+                                  { label: "Low", value: 1 },
+                                ]
+                            ).map(({ label, value }) => {
+                              const selected =
+                                form[k] >= 4 ? 5 : form[k] <= 2 ? 1 : 3;
+                              return (
+                                <button
+                                  type="button"
+                                  aria-label={k + ": " + label}
+                                  aria-pressed={selected === value}
+                                  key={value}
+                                  onClick={() =>
+                                    setForm({ ...form, [k]: value })
+                                  }
+                                  className={selected === value ? "chosen" : ""}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       ))}

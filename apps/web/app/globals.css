@@ -656,7 +656,7 @@ label {
 }
 .rating-options {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 .rating-options button {
@@ -665,7 +665,7 @@ label {
   background: #fafbf7;
   border-radius: 9px;
   color: #92a187;
-  font-size: 20px;
+  font-size: 14px;
 }
 .rating-options button span {
   font-size: 12px;
