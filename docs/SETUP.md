@@ -10,9 +10,9 @@ Copy `.env.example` to `apps/web/.env.local`. Add the project URL and publishabl
 
 Create your first admin user through Supabase's Authentication dashboard. Copy that user's UUID. Create a cohort and its admin membership in SQL:
 
-The sign-in screen sends and verifies email or SMS one-time codes. In Supabase Authentication → Email Templates, configure the Magic Link template to include `{{ .Token }}` so the email contains an OTP. Keep the Invite User confirmation link for first-time activation. Configure SMTP and the exact app redirect URLs. Enable phone authentication and configure an SMS provider before phone sign-in can work. After accepting the email invitation, participants can add and verify their phone in Account & preferences. This updates the same invited Auth account in international E.164 format; do not create a separate phone account without membership. Public signup remains disabled and OTP requests use `shouldCreateUser: false`. Existing passwords are not erased from Supabase by this UI change.
+The sign-in screen sends and verifies six-digit email codes only. In Supabase Authentication → Sign In / Providers → Email, set Email OTP length to **6**. In Authentication → Email Templates → Magic Link, replace the body with `supabase/templates/magic-link.html` and set the subject to "Your Human Rhythm Lab sign-in code". The template displays `{{ .Token }}` and contains no login link or `{{ .ConfirmationURL }}`. Saving a template file in this repository does not apply it to hosted Supabase; save these changes in the dashboard. Keep the Invite User confirmation link for first-time activation. Public signup remains disabled and OTP requests use `shouldCreateUser: false`. Existing passwords are not erased by this UI change. Configure SMTP and exact app redirect URLs.
 
-Verify email/SMS delivery, invalid/expired/reused codes, resend limits, session restoration, uninvited accounts and the dashboard after sign-in in a test project. Live OTP checks have not been executed.
+Verify six-digit email delivery, invalid/expired/reused codes, resend limits, session restoration, uninvited accounts and the dashboard after sign-in in a test project. Live OTP checks have not been executed.
 
 ```sql
 insert into public.cohorts(name,start_date)
@@ -22,7 +22,7 @@ insert into public.memberships(user_id,cohort_id,role,display_name,timezone)
 values ('ADMIN_USER_UUID','COHORT_UUID','admin','Program admin','Europe/Amsterdam');
 ```
 
-Replace placeholders with real IDs and the confirmed start date. Sign in with an email OTP. Invite testers through the admin workspace. They follow the email invitation link directly to their dashboard and confirm their timezone in Account & preferences. Returning participants use email OTP or a phone number linked to their invited account. One cohort per account is supported in this first version.
+Replace placeholders with real IDs and the confirmed start date. Sign in with an email OTP. Invite testers through the admin workspace. They follow the email invitation link directly to their dashboard and confirm their timezone in Account & preferences. Returning participants enter the six-digit email OTP in the app. One cohort per account is supported in this first version.
 
 ## 2. Media and content
 

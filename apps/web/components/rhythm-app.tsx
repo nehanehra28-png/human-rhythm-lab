@@ -36,7 +36,6 @@ import {
   completedWeeks,
 } from "../lib/program.mjs";
 import { supabase } from "../lib/supabase";
-import PhoneSignIn from "./phone-sign-in";
 type View = "today" | "program" | "week" | "admin" | "account";
 const blankExperience: Experience = {
   day: 1,
@@ -58,7 +57,6 @@ const habits = [
   { name: "Bedtime routine", icon: Moon },
 ];
 export default function RhythmApp() {
-  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
   const [otpDestination, setOtpDestination] = useState("");
   const [resendAt, setResendAt] = useState(0);
   const [store, setStore] = useState<Store | null>(null),
@@ -191,26 +189,19 @@ export default function RhythmApp() {
     const destination =
       otpDestination ||
       String(new FormData(e.currentTarget).get("destination")).trim();
-    if (loginMethod === "phone" && !/^\+[1-9]\d{7,14}$/.test(destination)) {
-      setMessage(
-        "Enter your phone number with country code, for example +31612345678.",
-      );
-      return;
-    }
     setBusy(true);
     setMessage("");
     try {
       const options = { shouldCreateUser: false };
-      const { error } = await supabase!.auth.signInWithOtp(
-        loginMethod === "email"
-          ? { email: destination, options }
-          : { phone: destination, options },
-      );
+      const { error } = await supabase!.auth.signInWithOtp({
+        email: destination,
+        options,
+      });
       if (error) throw error;
       setOtpDestination(destination);
       setResendAt(Date.now() + 60_000);
       setMessage(
-        "If this email or number is registered, a code is on its way. Check your inbox or messages.",
+        "If this email is invited, a code is on its way. Check your inbox and enter it here.",
       );
     } catch {
       setMessage(
@@ -224,14 +215,18 @@ export default function RhythmApp() {
     e.preventDefault();
     if (busy) return;
     const code = String(new FormData(e.currentTarget).get("code")).trim();
+    if (!/^\d{6}$/.test(code)) {
+      setMessage("Enter the six-digit code from your email.");
+      return;
+    }
     setBusy(true);
     setMessage("");
     try {
-      const { error } = await supabase!.auth.verifyOtp(
-        loginMethod === "email"
-          ? { email: otpDestination, token: code, type: "email" }
-          : { phone: otpDestination, token: code, type: "sms" },
-      );
+      const { error } = await supabase!.auth.verifyOtp({
+        email: otpDestination,
+        token: code,
+        type: "email",
+      });
       if (error) throw error;
       setOtpDestination("");
       setView("today");
@@ -343,8 +338,8 @@ export default function RhythmApp() {
           </h1>
           <p>
             {otpDestination
-              ? `Enter the code sent to ${otpDestination}.`
-              : "Sign in with a one-time code sent to your invited email or registered phone number. No password needed."}
+              ? `Enter the six-digit code sent to ${otpDestination}.`
+              : "Enter your invited email. We’ll send a one-time code for you to enter here."}
           </p>
           {token ? (
             <>
@@ -361,34 +356,18 @@ export default function RhythmApp() {
             </>
           ) : (
             <>
-              {!otpDestination && (
-                <label>
-                  Send a one-time code via
-                  <select
-                    value={loginMethod}
-                    disabled={busy}
-                    onChange={(e) => {
-                      setLoginMethod(e.target.value as "email" | "phone");
-                      setMessage("");
-                    }}
-                  >
-                    <option value="email">Email</option>
-                    <option value="phone">Phone</option>
-                  </select>
-                </label>
-              )}
               <form onSubmit={otpDestination ? verifyOtp : sendOtp}>
                 {otpDestination ? (
                   <label>
-                    One-time code
+                    Six-digit code
                     <input
                       key="code"
                       name="code"
                       type="text"
                       inputMode="numeric"
-                      pattern="[0-9]{6,10}"
+                      pattern="[0-9]{6}"
                       minLength={6}
-                      maxLength={10}
+                      maxLength={6}
                       autoComplete="one-time-code"
                       required
                       autoFocus
@@ -397,15 +376,12 @@ export default function RhythmApp() {
                   </label>
                 ) : (
                   <label>
-                    {loginMethod === "email" ? "Email" : "Phone number"}
+                    Email
                     <input
-                      key={loginMethod}
+                      key="email"
                       name="destination"
-                      type={loginMethod === "email" ? "email" : "tel"}
-                      autoComplete={loginMethod === "email" ? "email" : "tel"}
-                      placeholder={
-                        loginMethod === "phone" ? "+31612345678" : undefined
-                      }
+                      type="email"
+                      autoComplete="email"
                       maxLength={254}
                       required
                       disabled={busy}
@@ -436,7 +412,7 @@ export default function RhythmApp() {
                       setMessage("");
                     }}
                   >
-                    Use a different email or phone
+                    Use a different email
                   </button>
                 </>
               )}
@@ -444,9 +420,8 @@ export default function RhythmApp() {
             </>
           )}
           <p className="small">
-            Joining for the first time? Open the invitation received by email to
-            activate your account and go straight to your dashboard. No password
-            needed.
+            Access is by invitation only. Enter the code from your email to sign
+            in. You can paste the full code here.
           </p>
         </div>
       </main>
@@ -1620,7 +1595,6 @@ export default function RhythmApp() {
                   is confirmed.
                 </p>
               </section>
-              {!demo && <PhoneSignIn />}
               <section className="card account-card">
                 <h2>Your data</h2>
                 <p>

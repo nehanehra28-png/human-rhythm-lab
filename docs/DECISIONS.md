@@ -1,10 +1,10 @@
 # Decisions and open questions
 
-Updated: 13 October 2026.
+Updated: 15 October 2026.
 
 ## Confirmed
 
-- Invited testers with passwordless email or phone OTP sign-in and personal dashboards. Email invitations activate accounts; the existing dashboard remains the first page after authentication. Phone numbers must be linked to the same invited account.
+- Invited testers sign in with a six-digit email OTP entered in the app. Front-page sign-in is email-only. Email invitations currently activate accounts; the existing dashboard remains the first page after authentication. Numeric login emails require the Supabase template and OTP length configuration described in SETUP.md.
 - Each participant begins a personal 30-day timeline when invited. Content remains shared within the group.
 - Days 1–14 guided experiences, a midpoint feedback call, days 15–28 a shared admin-prepared diet plan, and days 29–30 closing review/feedback.
 - The team creates written content, video, and infographics; an admin publishes them.
