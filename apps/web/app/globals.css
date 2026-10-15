@@ -667,9 +667,10 @@ label {
   color: #92a187;
   font-size: 14px;
 }
-.rating-options button span {
-  font-size: 12px;
-  letter-spacing: -2px;
+.rating-options button .rating-emoji {
+  font-size: 20px;
+  margin-right: 6px;
+  vertical-align: middle;
 }
 .rating-options button.chosen {
   background: #e5eedd;

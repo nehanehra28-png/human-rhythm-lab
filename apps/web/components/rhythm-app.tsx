@@ -826,16 +826,16 @@ export default function RhythmApp() {
                           <div className="rating-options">
                             {(k === "mood"
                               ? [
-                                  { label: "Good", value: 5 },
-                                  { label: "Neutral", value: 3 },
-                                  { label: "Bad", value: 1 },
+                                  { label: "Good", emoji: "🙂", value: 5 },
+                                  { label: "Neutral", emoji: "😐", value: 3 },
+                                  { label: "Bad", emoji: "🙁", value: 1 },
                                 ]
                               : [
-                                  { label: "High", value: 5 },
-                                  { label: "Medium", value: 3 },
-                                  { label: "Low", value: 1 },
+                                  { label: "High", emoji: "⚡", value: 5 },
+                                  { label: "Medium", emoji: "🔋", value: 3 },
+                                  { label: "Low", emoji: "🪫", value: 1 },
                                 ]
-                            ).map(({ label, value }) => {
+                            ).map(({ label, emoji, value }) => {
                               const selected =
                                 form[k] >= 4 ? 5 : form[k] <= 2 ? 1 : 3;
                               return (
@@ -849,6 +849,12 @@ export default function RhythmApp() {
                                   }
                                   className={selected === value ? "chosen" : ""}
                                 >
+                                  <span
+                                    className="rating-emoji"
+                                    aria-hidden="true"
+                                  >
+                                    {emoji}
+                                  </span>
                                   {label}
                                 </button>
                               );
