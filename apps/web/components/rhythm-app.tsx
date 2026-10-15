@@ -36,6 +36,20 @@ import {
   completedWeeks,
 } from "../lib/program.mjs";
 import { supabase } from "../lib/supabase";
+const commonTimezones = [
+  { value: "America/Los_Angeles", label: "Pacific Time (PT)" },
+  { value: "America/Denver", label: "Mountain Time (MT)" },
+  { value: "America/Chicago", label: "Central Time (CT)" },
+  { value: "America/New_York", label: "Eastern Time (ET)" },
+  { value: "UTC", label: "UTC / GMT" },
+  { value: "Europe/London", label: "British Time (GMT / BST)" },
+  { value: "Europe/Amsterdam", label: "Central European Time (CET / CEST)" },
+  { value: "Europe/Athens", label: "Eastern European Time (EET / EEST)" },
+  { value: "Asia/Kolkata", label: "India Standard Time (IST)" },
+  { value: "Asia/Singapore", label: "Singapore Standard Time (SGT)" },
+  { value: "Asia/Tokyo", label: "Japan Standard Time (JST)" },
+  { value: "Australia/Sydney", label: "Australian Eastern Time (AEST / AEDT)" },
+];
 type View = "today" | "program" | "week" | "admin" | "account";
 const blankExperience: Experience = {
   day: 1,
@@ -1591,8 +1605,8 @@ export default function RhythmApp() {
               <section className="card account-card">
                 <h2>Your timezone</h2>
                 <p>
-                  Confirm the city timezone that matches where you are joining.
-                  Countries can have more than one.
+                  Choose your timezone from the short list below. Daylight
+                  saving is handled automatically.
                 </p>
                 <form
                   onSubmit={(e) => {
@@ -1613,13 +1627,18 @@ export default function RhythmApp() {
                       name="timezone"
                       defaultValue={store.settings.timezone}
                     >
-                      {Array.from(
-                        new Set([
-                          store.settings.timezone,
-                          ...Intl.supportedValuesOf("timeZone"),
-                        ]),
-                      ).map((t) => (
-                        <option key={t}>{t}</option>
+                      {!commonTimezones.some(
+                        (zone) => zone.value === store.settings.timezone,
+                      ) && (
+                        <option value={store.settings.timezone}>
+                          Current timezone (
+                          {store.settings.timezone.replaceAll("_", " ")})
+                        </option>
+                      )}
+                      {commonTimezones.map((zone) => (
+                        <option key={zone.value} value={zone.value}>
+                          {zone.label}
+                        </option>
                       ))}
                     </select>
                   </label>
