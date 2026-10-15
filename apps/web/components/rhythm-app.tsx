@@ -57,6 +57,8 @@ const habits = [
   { name: "Bedtime routine", icon: Moon },
 ];
 export default function RhythmApp() {
+  const [sessionError, setSessionError] = useState("");
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [otpDestination, setOtpDestination] = useState("");
   const [resendAt, setResendAt] = useState(0);
   const [store, setStore] = useState<Store | null>(null),
@@ -115,19 +117,30 @@ export default function RhythmApp() {
     return () => data.subscription.unsubscribe();
   }, [demo]);
   useEffect(() => {
+    let cancelled = false;
     if (token) {
+      setSessionError("");
       fetch("/api/state", { headers: { Authorization: `Bearer ${token}` } })
         .then(async (r) => {
           const d = await r.json();
           if (!r.ok) throw Error(d.error);
+          if (cancelled) return;
           setStore(d.store);
           setRole(d.role);
           setCohortId(d.cohortId);
           setParticipants(d.participants || []);
         })
-        .catch((e) => setMessage(e.message));
+        .catch(() => {
+          if (!cancelled)
+            setSessionError(
+              "We could not load your dashboard. Your session is still signed in.",
+            );
+        });
     } else if (!demo) setStore(null);
-  }, [token, demo]);
+    return () => {
+      cancelled = true;
+    };
+  }, [token, demo, loadAttempt]);
   const day = store
     ? store.settings.startedAt
       ? participantDay(store.settings.startedAt, store.settings.timezone)
@@ -321,6 +334,19 @@ export default function RhythmApp() {
             Account services have not been connected yet. Please check back with
             your program team.
           </p>
+        </div>
+      </main>
+    );
+  if (!demo && token && !store)
+    return (
+      <main className="login">
+        <div className="login-card">
+          <Leaf />
+          <h1>{sessionError ? "Let’s try again." : "Finding your rhythm…"}</h1>
+          <p role="status">{sessionError || "Restoring your dashboard."}</p>
+          {sessionError && (
+            <button onClick={() => setLoadAttempt((n) => n + 1)}>Retry</button>
+          )}
         </div>
       </main>
     );
