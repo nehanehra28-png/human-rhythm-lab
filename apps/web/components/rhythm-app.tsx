@@ -38,17 +38,10 @@ import {
 import { supabase } from "../lib/supabase";
 const commonTimezones = [
   { value: "America/Los_Angeles", label: "Pacific Time (PT)" },
-  { value: "America/Denver", label: "Mountain Time (MT)" },
-  { value: "America/Chicago", label: "Central Time (CT)" },
   { value: "America/New_York", label: "Eastern Time (ET)" },
   { value: "UTC", label: "UTC / GMT" },
-  { value: "Europe/London", label: "British Time (GMT / BST)" },
   { value: "Europe/Amsterdam", label: "Central European Time (CET / CEST)" },
-  { value: "Europe/Athens", label: "Eastern European Time (EET / EEST)" },
   { value: "Asia/Kolkata", label: "India Standard Time (IST)" },
-  { value: "Asia/Singapore", label: "Singapore Standard Time (SGT)" },
-  { value: "Asia/Tokyo", label: "Japan Standard Time (JST)" },
-  { value: "Australia/Sydney", label: "Australian Eastern Time (AEST / AEDT)" },
 ];
 type View = "today" | "program" | "week" | "admin" | "account";
 const blankExperience: Experience = {
