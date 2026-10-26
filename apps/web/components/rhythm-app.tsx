@@ -1755,6 +1755,32 @@ export default function RhythmApp() {
           )}
         </main>
       </div>
+      <nav className="bottom-navigation" aria-label="Main navigation">
+        {[...nav, { id: "account", name: "Account", icon: Settings }].map(
+          (item) => (
+            <button
+              type="button"
+              key={item.id}
+              aria-current={view === item.id ? "page" : undefined}
+              onClick={() => {
+                navigate(item.id as View);
+                window.scrollTo({ top: 0, behavior: "instant" });
+              }}
+            >
+              <item.icon size={21} aria-hidden="true" />
+              <span>
+                {item.id === "today"
+                  ? "Dashboard"
+                  : item.id === "program"
+                    ? "Experience"
+                    : item.id === "week"
+                      ? "Reflections"
+                      : "Account"}
+              </span>
+            </button>
+          ),
+        )}
+      </nav>
     </div>
   );
 }
