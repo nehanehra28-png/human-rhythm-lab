@@ -39,6 +39,12 @@ export async function GET(req: NextRequest) {
         .eq("user_id", user.id)
         .eq("cohort_id", m.cohort_id)
         .maybeSingle(),
+      db
+        .from("checkin_entries")
+        .select("id,day,mood,energy,sleep,notes,created_at")
+        .eq("user_id", user.id)
+        .eq("cohort_id", m.cohort_id)
+        .order("created_at", { ascending: false }),
     ]);
     for (const r of results)
       if (r.error)
@@ -94,6 +100,7 @@ export async function GET(req: NextRequest) {
           (results[4].data || []).map((r) => [String(r.week), r.reflection]),
         ),
         feedback: results[5].data?.answers,
+        checkinEntries: results[6].data || [],
       },
     });
   } catch (e) {
@@ -109,7 +116,7 @@ export async function POST(req: NextRequest) {
     if (body.length > 40000) throw Error("Request too large.");
     const { action, payload: p } = JSON.parse(body);
     let error;
-    if (action === "checkin") {
+    if (action === "checkin" || action === "checkinEntry") {
       const today = participantDay(m.started_at, m.timezone);
       if (
         !Number.isInteger(p.day) ||
@@ -140,17 +147,20 @@ export async function POST(req: NextRequest) {
         typeof p.diet !== "boolean"
       )
         throw Error("Check your check-in values.");
-      ({ error } = await db.rpc("save_checkin", {
-        cohort: m.cohort_id,
-        program_day: p.day,
-        mood_score: p.mood,
-        energy_score: p.energy,
-        sleep_hours: p.sleep,
-        habit_names: p.habits,
-        response_status: p.status,
-        diet_followed: p.diet,
-        private_note: p.notes,
-      }));
+      ({ error } = await db.rpc(
+        action === "checkinEntry" ? "save_checkin_entry" : "save_checkin",
+        {
+          cohort: m.cohort_id,
+          program_day: p.day,
+          mood_score: p.mood,
+          energy_score: p.energy,
+          sleep_hours: p.sleep,
+          habit_names: p.habits,
+          response_status: p.status,
+          diet_followed: p.diet,
+          private_note: p.notes,
+        },
+      ));
     } else if (action === "timezone") {
       try {
         new Intl.DateTimeFormat("en", { timeZone: p.timezone }).format();

@@ -24,7 +24,7 @@ Updated: 15 October 2026.
 ## Provisional implementation defaults
 
 - Unlock at each participant's local midnight, relative to the invitation timestamp in their confirmed timezone.
-- One editable check-in per cohort day; scores range 1–5.
+- Multiple timestamped check-ins per day. The latest entry supplies the daily summary; habit updates do not create entries. Historical daily records remain unchanged. Apply migration 003 before deploying this change. Scores range 1–5.
 - Completed/partially completed/skipped responses, without failure labels.
 - Personal custom rituals can be recorded in the daily check-in; reusable custom habit definitions are deferred.
 - Review windows end on days 7, 14, 21, and 28. At least three entries are required for an AI reflection.

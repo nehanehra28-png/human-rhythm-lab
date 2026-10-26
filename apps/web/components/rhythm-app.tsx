@@ -178,6 +178,7 @@ export default function RhythmApp() {
       );
   }, [store, shown]);
   async function mutate(action: string, payload: unknown, next: Store) {
+    if (busy) return;
     setBusy(true);
     setMessage("");
     try {
@@ -196,6 +197,15 @@ export default function RhythmApp() {
         const d = await r.json();
         if (!r.ok) throw Error(d.error);
         setStore(next);
+      }
+      if (action === "checkinEntry" && !demo) {
+        const refreshed = await fetch("/api/state", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (refreshed.ok) {
+          const state = await refreshed.json();
+          setStore(state.store);
+        }
       }
       setMessage("Saved successfully.");
     } catch (e) {
@@ -841,12 +851,26 @@ export default function RhythmApp() {
                     <span className="soft-tag">~1 minute</span>
                   </div>
                   <h2>How are you, really?</h2>
-                  <p>A small moment of honesty with yourself.</p>
+                  <p>
+                    Check in as often as you like. Each save adds a new entry.
+                  </p>
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
-                      mutate("checkin", form, {
+                      mutate("checkinEntry", form, {
                         ...store,
+                        checkinEntries: [
+                          {
+                            id: crypto.randomUUID(),
+                            day: form.day,
+                            mood: form.mood,
+                            energy: form.energy,
+                            sleep: form.sleep,
+                            notes: form.notes,
+                            created_at: new Date().toISOString(),
+                          },
+                          ...(store.checkinEntries || []),
+                        ],
                         checkins: [
                           ...checks.filter((c) => c.day !== shown),
                           form,
@@ -962,10 +986,52 @@ export default function RhythmApp() {
                         </label>
                       )}
                       <button className="primary full" disabled={busy}>
-                        Save my check-in <ArrowRight size={17} />
+                        Add check-in <ArrowRight size={17} />
                       </button>
                     </fieldset>
                   </form>
+                  <section aria-label="Check-in history">
+                    <h3>Your check-ins for this day</h3>
+                    <ul>
+                      {(store.checkinEntries || [])
+                        .filter((entry) => entry.day === shown)
+                        .map((entry) => (
+                          <li key={entry.id}>
+                            <time dateTime={entry.created_at}>
+                              {new Date(entry.created_at).toLocaleString(
+                                undefined,
+                                {
+                                  timeZone: store.settings.timezone,
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  second: "2-digit",
+                                },
+                              )}
+                            </time>
+                            {" · Mood "}
+                            {entry.mood >= 4
+                              ? "🙂"
+                              : entry.mood <= 2
+                                ? "🙁"
+                                : "😐"}
+                            {" · Energy "}
+                            {entry.energy >= 4
+                              ? "⚡"
+                              : entry.energy <= 2
+                                ? "🪫"
+                                : "🔋"}
+                          </li>
+                        ))}
+                    </ul>
+                    {!(store.checkinEntries || []).some(
+                      (entry) => entry.day === shown,
+                    ) && (
+                      <p>
+                        No new check-ins recorded for this day yet. Earlier
+                        daily records remain in your summaries.
+                      </p>
+                    )}
+                  </section>
                   <span className="privacy-note">
                     <Lock size={12} /> Your notes are private. Admins see scores
                     and completion.

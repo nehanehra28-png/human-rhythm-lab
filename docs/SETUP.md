@@ -57,3 +57,9 @@ Existing projects must run `supabase/migrations/002_personal_timelines.sql` in t
 New memberships start when the admin sends the invitation. Day 1 is the invitation's local calendar date in the member's timezone (initially UTC until confirmed). Next days unlock at local midnight; changing timezone can shift the calendar boundary, but cannot replace the stored invitation timestamp. Existing members with recorded check-ins, reviews or feedback retain their prior day mapping. Existing members without recorded activity start at migration time. Re-running migration 002 does not reset starts.
 
 Shared published content, the shared diet plan and meeting settings remain group-wide. Individual call scheduling is not implemented. Test two accounts invited on different dates, future-content/media denial, check-in boundaries and personal weekly review eligibility before launch.
+
+## Multiple check-ins
+
+Apply `supabase/migrations/003_multiple_checkins.sql` after migrations 001 and 002 before deploying the multiple-check-in UI/API. Every explicit Add check-in appends a private timestamped mood, energy, sleep and note entry and atomically updates the existing daily summary. Habit changes update only that summary. Weekly charts and AI continue to use the latest daily summary, so frequent check-ins do not inflate completed days. Existing records are preserved without invented historical timestamps.
+
+Cloud verification still required: save two entries on the same day, refresh and confirm both remain; confirm another participant and admins cannot read entry notes/history; confirm future/out-of-program day inserts fail; confirm habit updates do not append entries.

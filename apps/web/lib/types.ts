@@ -32,6 +32,15 @@ export type Settings = {
 };
 export type Store = {
   checkins: CheckIn[];
+  checkinEntries?: {
+    id: string;
+    day: number;
+    mood: number;
+    energy: number;
+    sleep: number;
+    notes: string;
+    created_at: string;
+  }[];
   experiences: Experience[];
   settings: Settings;
   feedback?: {
