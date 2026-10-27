@@ -1,3 +1,7 @@
+import {
+  canSavePhaseTwo,
+  validPhaseTwoItems,
+} from "../../../lib/phase-two.mjs";
 import { createClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
 import {
@@ -6,11 +10,16 @@ import {
   sameOrigin,
   mediaReference,
 } from "../../../lib/server";
-import { average, participantDay, dateInZone } from "../../../lib/program.mjs";
+import {
+  latestCheckin,
+  participantDay,
+  dateInZone,
+} from "../../../lib/program.mjs";
 export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
     const { db, user, membership: m } = await authorized(req);
+    const today = participantDay(m.started_at, m.timezone);
     const results = await Promise.all([
       db.from("cohorts").select("*").eq("id", m.cohort_id).single(),
       db
@@ -45,6 +54,13 @@ export async function GET(req: NextRequest) {
         .eq("user_id", user.id)
         .eq("cohort_id", m.cohort_id)
         .order("created_at", { ascending: false }),
+      today >= 16
+        ? db
+            .from("phase_two_checks")
+            .select("day,items")
+            .eq("user_id", user.id)
+            .eq("cohort_id", m.cohort_id)
+        : Promise.resolve({ data: [], error: null }),
     ]);
     for (const r of results)
       if (r.error)
@@ -60,21 +76,24 @@ export async function GET(req: NextRequest) {
         .eq("role", "participant");
       const { data: entries, error: ce } = await db
         .from("checkins")
-        .select("user_id,mood,energy,sleep,day,status")
+        .select("user_id,mood,energy,sleep,day,status,updated_at")
         .eq("cohort_id", m.cohort_id);
       if (me || ce) throw Error("Could not load cohort progress.");
       participants = (members || []).map((person) => {
         const rows = (entries || []).filter(
           (e) => e.user_id === person.user_id,
         );
+        const latest = latestCheckin(rows);
         return {
+          latestAt: latest?.updated_at || null,
+          latestStatus: latest?.status || null,
           name: person.display_name || person.user_id,
           day: participantDay(person.started_at, person.timezone),
           count: rows.length,
           completed: rows.filter((r) => r.status === "completed").length,
-          mood: average(rows.map((c) => c.mood)),
-          energy: average(rows.map((c) => c.energy)),
-          sleep: average(rows.map((c) => c.sleep)),
+          mood: latest?.mood ?? null,
+          energy: latest?.energy ?? null,
+          sleep: latest?.sleep ?? null,
         };
       });
     }
@@ -83,6 +102,7 @@ export async function GET(req: NextRequest) {
       cohortId: m.cohort_id,
       participants,
       store: {
+        phaseTwoChecks: results[7].data || [],
         settings: {
           start: dateInZone(new Date(m.started_at), m.timezone),
           startedAt: m.started_at,
@@ -121,9 +141,9 @@ export async function POST(req: NextRequest) {
       if (
         !Number.isInteger(p.day) ||
         p.day < 1 ||
-        p.day > 30 ||
+        p.day > 31 ||
         p.day > today ||
-        today > 30
+        today > 31
       )
         throw Error("This program day is not available for check-ins.");
       if (
@@ -161,6 +181,24 @@ export async function POST(req: NextRequest) {
           private_note: p.notes,
         },
       ));
+    } else if (action === "phaseTwoChecklist") {
+      if (
+        !canSavePhaseTwo(p.day, participantDay(m.started_at, m.timezone)) ||
+        !validPhaseTwoItems(p.items)
+      )
+        throw Error(
+          "Phase 2 checklist is not available or contains invalid values.",
+        );
+      ({ error } = await db.from("phase_two_checks").upsert(
+        {
+          user_id: user.id,
+          cohort_id: m.cohort_id,
+          day: p.day,
+          items: p.items,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,cohort_id,day" },
+      ));
     } else if (action === "timezone") {
       try {
         new Intl.DateTimeFormat("en", { timeZone: p.timezone }).format();
@@ -177,7 +215,7 @@ export async function POST(req: NextRequest) {
       if (
         !Number.isInteger(p.day) ||
         p.day < 1 ||
-        p.day > 14 ||
+        p.day > 15 ||
         typeof p.published !== "boolean"
       )
         throw Error("Invalid experience.");

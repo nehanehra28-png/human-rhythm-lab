@@ -23,12 +23,12 @@ export function participantDay(startedAt, timezone, now = new Date()) {
 export function phase(day) {
   return day < 1
     ? "Not started"
-    : day <= 14
+    : day <= 15
       ? "Daily experiences"
       : day <= 28
         ? "Nourish & notice"
-        : day <= 30
-          ? "Reflect & celebrate"
+        : day <= 31
+          ? "Phase 3 · Sustain your rhythm"
           : "Program complete";
 }
 export function completedWeeks(day) {
@@ -38,4 +38,14 @@ export function average(values) {
   return values.length
     ? values.reduce((a, b) => a + b, 0) / values.length
     : null;
+}
+
+export function latestCheckin(rows) {
+  return (
+    [...rows].sort(
+      (a, b) =>
+        (Date.parse(b.updated_at || "") || 0) -
+          (Date.parse(a.updated_at || "") || 0) || b.day - a.day,
+    )[0] || null
+  );
 }

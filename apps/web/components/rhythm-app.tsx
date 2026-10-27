@@ -1,4 +1,5 @@
 "use client";
+import { phaseTwoGroups } from "../lib/phase-two.mjs";
 import { useEffect, useState } from "react";
 import {
   Leaf,
@@ -79,6 +80,8 @@ export default function RhythmApp() {
         mood: number | null;
         energy: number | null;
         sleep: number | null;
+        latestAt: string | null;
+        latestStatus: string | null;
       }[]
     >([]);
   const [form, setForm] = useState<CheckIn>({
@@ -97,7 +100,26 @@ export default function RhythmApp() {
     if (demo) {
       try {
         const saved = localStorage.getItem("hrl-preview-v1");
-        setStore(saved ? JSON.parse(saved) : initialStore());
+        const preview = saved ? JSON.parse(saved) : initialStore();
+        const previewDay = Number(
+          new URLSearchParams(window.location.search).get("previewDay"),
+        );
+        if (
+          Number.isInteger(previewDay) &&
+          previewDay >= 1 &&
+          previewDay <= 31
+        ) {
+          const start = new Date();
+          start.setDate(start.getDate() - (previewDay - 1));
+          preview.settings.start = new Intl.DateTimeFormat("en-CA", {
+            timeZone: preview.settings.timezone,
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          }).format(start);
+          delete preview.settings.startedAt;
+        }
+        setStore(preview);
       } catch {
         setStore(initialStore());
       }
@@ -139,12 +161,40 @@ export default function RhythmApp() {
       cancelled = true;
     };
   }, [token, demo, loadAttempt]);
+  useEffect(() => {
+    if (!token || role !== "admin" || view !== "admin") return;
+    let cancelled = false;
+    let running = false;
+    const refresh = async () => {
+      if (running) return;
+      running = true;
+      try {
+        const response = await fetch("/api/state", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const state = await response.json();
+          if (!cancelled) setParticipants(state.participants || []);
+        }
+      } finally {
+        running = false;
+      }
+    };
+    const timer = window.setInterval(() => {
+      void refresh().catch(() => {});
+    }, 30_000);
+    void refresh().catch(() => {});
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [token, role, view]);
   const day = store
     ? store.settings.startedAt
       ? participantDay(store.settings.startedAt, store.settings.timezone)
       : programDay(store.settings.start, store.settings.timezone)
     : 1;
-  const current = Math.min(30, Math.max(1, day));
+  const current = Math.min(31, Math.max(1, day));
   const shown = selectedDay ?? current;
   useEffect(() => {
     if (store)
@@ -372,7 +422,7 @@ export default function RhythmApp() {
           The Human Rhythm Lab
         </div>
         <div className="login-card">
-          <span className="eyebrow">YOUR 30-DAY EXPERIENCE</span>
+          <span className="eyebrow">YOUR 31-DAY EXPERIENCE</span>
           <h1>
             {otpDestination ? "Check your code." : "Welcome back."}
             <br />A little more in tune.
@@ -500,7 +550,7 @@ export default function RhythmApp() {
             The Human Rhythm<span className="brand-sub">Lab</span>
           </span>
         </a>
-        <div className="cohort-label">THE 30-DAY EXPERIENCE</div>
+        <div className="cohort-label">THE 31-DAY EXPERIENCE</div>
         <nav>
           {nav.map((n) => (
             <button
@@ -616,11 +666,11 @@ export default function RhythmApp() {
               </div>
               <section className="journey">
                 <div className="journey-main">
-                  <span className="pill">YOUR 30-DAY JOURNEY</span>
+                  <span className="pill">YOUR 31-DAY JOURNEY</span>
                   <h2>
                     {day < 1
                       ? "Your next chapter is coming."
-                      : day > 30
+                      : day > 31
                         ? "A chapter worth reflecting on."
                         : `Day ${current}. A little closer to you.`}
                   </h2>
@@ -633,21 +683,21 @@ export default function RhythmApp() {
                     <div className="progress-track">
                       <span
                         style={{
-                          width: `${Math.max(0, Math.min(100, ((day - 1) / 30) * 100))}%`,
+                          width: `${Math.max(0, Math.min(100, ((day - 1) / 31) * 100))}%`,
                         }}
                       />
                     </div>
-                    <span>{Math.max(0, Math.min(30, day - 1))} of 30 days</span>
+                    <span>{Math.max(0, Math.min(31, day - 1))} of 31 days</span>
                   </div>
                   <div className="phase-steps">
-                    <span className={day <= 14 ? "selected" : ""}>
+                    <span className={day <= 15 ? "selected" : ""}>
                       01 · Experience
                     </span>
-                    <span className={day >= 15 && day <= 28 ? "selected" : ""}>
+                    <span className={day >= 16 && day <= 28 ? "selected" : ""}>
                       02 · Nourish
                     </span>
                     <span className={day >= 29 ? "selected" : ""}>
-                      03 · Reflect
+                      03 · Sustain
                     </span>
                   </div>
                 </div>
@@ -713,11 +763,122 @@ export default function RhythmApp() {
                   </div>
                 ))}
               </div>
+              {day < 16 && (
+                <div className="callout">
+                  <Lock size={18} />
+                  <span>
+                    Phase 2 opens on your Day 16, after Phase 1 (Days 1–15).
+                  </span>
+                </div>
+              )}
+              {day < 29 && (
+                <div className="callout">
+                  <Lock size={18} />
+                  <span>
+                    Phase 3 opens on your Day 29, after Phase 2 (Days 16–28).
+                  </span>
+                </div>
+              )}
+              {day >= 16 && shown >= 16 && shown <= 31 && (
+                <section className="card phase-two-checklist">
+                  <span className="eyebrow">
+                    {shown <= 28
+                      ? "PHASE 2 · DAYS 16–28"
+                      : "PHASE 3 · DAYS 29–31"}
+                  </span>
+                  <h2>Your daily lifestyle checklist</h2>
+                  <p>
+                    Day {shown} · Your own record for today. Tick completed
+                    steps or choose Skip. You can update this day later.
+                  </p>
+                  <div className="callout">
+                    <ShieldCheck size={18} />
+                    <span>
+                      This routine was supplied by your program team. Follow
+                      your personal medical advice, food requirements and fluid
+                      restrictions. You may skip any step. Personalised
+                      affirmations and recipes must come from your team.
+                    </span>
+                  </div>
+                  {phaseTwoGroups.map((group) => (
+                    <fieldset key={group.title} disabled={busy || day > 31}>
+                      <legend>
+                        {group.title} · {group.time}
+                      </legend>
+                      {group.items.map((item) => {
+                        const items =
+                          store.phaseTwoChecks?.find((row) => row.day === shown)
+                            ?.items || {};
+                        const save = (
+                          status: "done" | "skipped" | undefined,
+                        ) => {
+                          const nextItems = { ...items };
+                          if (status) nextItems[item.id] = status;
+                          else delete nextItems[item.id];
+                          mutate(
+                            "phaseTwoChecklist",
+                            { day: shown, items: nextItems },
+                            {
+                              ...store,
+                              phaseTwoChecks: [
+                                ...(store.phaseTwoChecks || []).filter(
+                                  (row) => row.day !== shown,
+                                ),
+                                { day: shown, items: nextItems },
+                              ],
+                            },
+                          );
+                        };
+                        return (
+                          <div className="lifestyle-step" key={item.id}>
+                            <label>
+                              <input
+                                type="checkbox"
+                                checked={items[item.id] === "done"}
+                                onChange={(event) =>
+                                  save(
+                                    event.target.checked ? "done" : undefined,
+                                  )
+                                }
+                              />
+                              <span>
+                                {item.label}
+                                {item.detail && <small>{item.detail}</small>}
+                              </span>
+                            </label>
+                            <button
+                              type="button"
+                              aria-label={
+                                "Skip " + item.label + " — " + group.title
+                              }
+                              aria-pressed={items[item.id] === "skipped"}
+                              onClick={() =>
+                                save(
+                                  items[item.id] === "skipped"
+                                    ? undefined
+                                    : "skipped",
+                                )
+                              }
+                            >
+                              {items[item.id] === "skipped"
+                                ? "Skipped"
+                                : "Skip"}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </fieldset>
+                  ))}
+                </section>
+              )}
               <div className="dashboard-grid">
-                <section className="card experience">
+                <section
+                  className="card experience"
+                  hidden={shown >= 16 && shown <= 31}
+                >
                   <div className="card-top">
                     <span className="eyebrow">
-                      {shown <= 14
+                      {shown <= 15
                         ? `EXPERIENCE ${String(shown).padStart(2, "0")}`
                         : shown <= 28
                           ? "YOUR NOURISH PHASE"
@@ -728,7 +889,7 @@ export default function RhythmApp() {
                     </span>
                   </div>
                   <h2>
-                    {shown <= 14
+                    {shown <= 15
                       ? exp?.title || "Your next experience awaits"
                       : shown <= 28
                         ? "Nourish & notice"
@@ -774,7 +935,7 @@ export default function RhythmApp() {
                       </button>
                     ))}
                   </div>
-                  {shown <= 14 ? (
+                  {shown <= 15 ? (
                     <>
                       {exp?.callout && (
                         <div className="callout">
@@ -823,7 +984,7 @@ export default function RhythmApp() {
                       {shown <= 28
                         ? store.settings.diet ||
                           "Your admin has not published the shared diet plan yet."
-                        : "Visit My experience to complete your final feedback on days 29–30."}
+                        : "Visit My experience to complete your final feedback on days 29–31."}
                     </p>
                   )}
                 </section>
@@ -860,7 +1021,7 @@ export default function RhythmApp() {
                       });
                     }}
                   >
-                    <fieldset disabled={busy || day < 1 || day > 30}>
+                    <fieldset disabled={busy || day < 1 || day > 31}>
                       <legend className="sr-only">Daily check-in</legend>
                       {(["mood", "energy"] as const).map((k) => (
                         <div className="rating" key={k}>
@@ -955,7 +1116,7 @@ export default function RhythmApp() {
                           <option>skipped</option>
                         </select>
                       </label>
-                      {shown >= 15 && shown <= 28 && (
+                      {shown >= 16 && shown <= 31 && (
                         <label className="checkbox-row">
                           <input
                             type="checkbox"
@@ -1037,9 +1198,9 @@ export default function RhythmApp() {
               </div>
               <div className="program-phases">
                 {[
-                  "01 · Experience · Days 1–14",
-                  "02 · Nourish · Days 15–28",
-                  "03 · Reflect · Days 29–30",
+                  "01 · Experience · Days 1–15",
+                  "02 · Nourish · Days 16–28",
+                  "03 · Sustain · Days 29–31",
                 ].map((t) => (
                   <div className="card" key={t}>
                     <Leaf size={23} />
@@ -1048,7 +1209,7 @@ export default function RhythmApp() {
                 ))}
               </div>
               <div className="day-grid">
-                {Array.from({ length: 30 }, (_, i) => i + 1).map((n) => (
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((n) => (
                   <button
                     disabled={n > day}
                     key={n}
@@ -1060,13 +1221,13 @@ export default function RhythmApp() {
                   >
                     <span>DAY {String(n).padStart(2, "0")}</span>
                     <strong>
-                      {n <= 14
+                      {n <= 15
                         ? store.experiences.find(
                             (e) => e.day === n && e.published,
                           )?.title || "Experience coming soon"
                         : n <= 28
                           ? "Nourish & notice"
-                          : "Closing reflection"}
+                          : "Sustain your rhythm"}
                     </strong>
                     <small>
                       {n > day ? (
@@ -1110,7 +1271,7 @@ export default function RhythmApp() {
               {day >= 29 && (
                 <section className="card">
                   <h2>Your closing reflection</h2>
-                  <p>Tell us about your 30-day experience.</p>
+                  <p>Tell us about your 31-day experience.</p>
                   <form
                     className="admin-form"
                     onSubmit={(e) => {
@@ -1261,7 +1422,10 @@ export default function RhythmApp() {
               <section className="card">
                 <div className="section-heading">
                   <h2>Cohort progress</h2>
-                  <span className="soft-tag">Notes remain private</span>
+                  <span className="soft-tag">
+                    Latest saved scores · refreshes every 30 seconds · notes
+                    remain private
+                  </span>
                 </div>
                 {demo ? (
                   <p className="empty-inline">
@@ -1275,23 +1439,34 @@ export default function RhythmApp() {
                         <tr>
                           <th>Participant</th>
                           <th>Program day</th>
-                          <th>Check-ins</th>
+                          <th>Days recorded</th>
                           <th>Completed</th>
-                          <th>Mood</th>
-                          <th>Energy</th>
-                          <th>Sleep</th>
+                          <th>Latest mood</th>
+                          <th>Latest energy</th>
+                          <th>Latest sleep</th>
+                          <th>Latest response</th>
+                          <th>Last saved</th>
                         </tr>
                       </thead>
                       <tbody>
                         {participants.map((p) => (
                           <tr key={p.name}>
                             <td>{p.name}</td>
-                            <td>{p.day > 30 ? "Complete" : `Day ${p.day}`}</td>
+                            <td>{p.day > 31 ? "Complete" : `Day ${p.day}`}</td>
                             <td>{p.count}</td>
                             <td>{p.completed}</td>
                             <td>{p.mood?.toFixed(1) || "—"}</td>
                             <td>{p.energy?.toFixed(1) || "—"}</td>
                             <td>{p.sleep?.toFixed(1) || "—"}</td>
+                            <td>{p.latestStatus || "—"}</td>
+                            <td>
+                              {p.latestAt
+                                ? new Date(p.latestAt).toLocaleString(
+                                    undefined,
+                                    { timeZone: store.settings.timezone },
+                                  )
+                                : "Not recorded"}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -1375,7 +1550,7 @@ export default function RhythmApp() {
                       }
                       value={editing.day}
                     >
-                      {Array.from({ length: 14 }, (_, i) => (
+                      {Array.from({ length: 15 }, (_, i) => (
                         <option key={i} value={i + 1}>
                           Day {i + 1}
                         </option>

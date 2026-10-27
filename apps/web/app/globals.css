@@ -1566,3 +1566,14 @@ textarea::placeholder {
     display: none;
   }
 }
+.phase-two-checklist { margin: 24px 0; }
+.phase-two-checklist h2 { margin: 10px 0; }
+.phase-two-checklist fieldset { border: 1px solid var(--line); border-radius: 12px; margin-top: 20px; padding: 12px; }
+.phase-two-checklist legend { font-weight: 700; color: var(--green); padding: 0 8px; }
+.lifestyle-step { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.lifestyle-step:last-child { border-bottom: 0; }
+.lifestyle-step label { display: flex; align-items: flex-start; gap: 12px; flex: 1; line-height: 1.5; }
+.lifestyle-step input { width: 22px; height: 22px; flex-shrink: 0; accent-color: var(--green); }
+.lifestyle-step small { display: block; font-size: 12px; line-height: 1.5; margin-top: 4px; }
+.lifestyle-step button { min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.lifestyle-step button[aria-pressed="true"] { background: var(--light); border-color: var(--green); }

@@ -31,6 +31,7 @@ export type Settings = {
   diet: string;
 };
 export type Store = {
+  phaseTwoChecks?: { day: number; items: Record<string, "done" | "skipped"> }[];
   checkins: CheckIn[];
   checkinEntries?: {
     id: string;

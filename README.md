@@ -1,8 +1,8 @@
 # Human Rhythm Lab
 
-A first working Next.js app for a guided 30-day wellness program for invited testers. Local development supports a clearly labeled sample-data preview. Cloud integrations require setup and live verification.
+A first working Next.js app for a guided 31-day wellness program for invited testers. Local development supports a clearly labeled sample-data preview. Cloud integrations require setup and live verification.
 
-Participants sign in to their own dashboards. Each participant starts Day 1 when invited and follows their own schedule: 14 days of guided experiences, a midpoint feedback call, 14 days of a shared admin-prepared diet plan, and two closing days. Weekly AI reflections appear directly to participants.
+Participants sign in to their own dashboards. Each participant starts Day 1 when invited and follows their own schedule: 15 days of guided experiences, a midpoint feedback call, Phase 2 on Days 16–28 with a personal daily lifestyle checklist, and Phase 3 on Days 29–31 with the same checklist. Weekly AI reflections appear directly to participants.
 
 ## Planned stack
 

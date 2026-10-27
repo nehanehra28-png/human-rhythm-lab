@@ -8,7 +8,7 @@ Updated: 15 October 2026.
 
 - Invited testers sign in with a six-digit email OTP entered in the app. Front-page sign-in is email-only. Email invitations currently activate accounts; the existing dashboard remains the first page after authentication. Numeric login emails require the Supabase template and OTP length configuration described in SETUP.md.
 - Each participant begins a personal 30-day timeline when invited. Content remains shared within the group.
-- Days 1–14 guided experiences, a midpoint feedback call, days 15–28 a shared admin-prepared diet plan, and days 29–30 closing review/feedback.
+- Days 1–15 guided experiences, a midpoint feedback call, days 16–28 Phase 2 with a personal daily lifestyle checklist, and Phase 3 on days 29–31 using the same checklist.
 - The team creates written content, video, and infographics; an admin publishes them.
 - Content unlocks daily; previous experiences remain accessible.
 - Admins see completion and scores only. Participant notes stay private.
@@ -50,3 +50,11 @@ Live admin sign-in and publication are verified; invitation delivery, media, iso
 ## Brand and readability update — 27 October 2026
 
 Use the official transparent logo from https://thehumanrhythmlab.com/ (stored in apps/web/public/human-rhythm-lab-logo.png). The reference palette uses warm cream oklch(93.7% .018 80), forest green oklch(34% .045 155), and dark neutral foregrounds. Header: Human Rhythm Reset Experience. Small labels use a 12px minimum and darker foreground colors.
+
+## Phase 2 checklist — 27 October 2026
+
+Phase 1 ends on Day 15; Phase 2 unlocks on each participant’s Day 16, independently of activity completion. Days 29–30 remain closing reflection. The supplied lifestyle checklist is recorded per participant and program day, with completed/skipped/unrecorded states. Apply migration 004 before deployment. The table’s conflicting 1-week/3-month headings do not extend the program. Sungazing is excluded for eye safety; no personalised affirmations, juice recipes or water targets are invented.
+
+## Three-phase update — 27 October 2026
+
+The experience lasts 31 days: Phase 1 Days 1–15, Phase 2 Days 16–28, Phase 3 Days 29–31. Each phase unlocks only on its first personal program day; completion of activities is not a prerequisite. Phase 3 repeats the daily lifestyle checklist. Multiple timestamped check-ins are allowed throughout all 31 days. The latest saved daily snapshot drives admin mood, energy, sleep and response, refreshed every 30 seconds while the admin view is open. Notes and entry history remain owner-only. Historical summaries have no invented save timestamp. Apply migrations 004 and 005 before deployment.

@@ -1,17 +1,51 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { programDay, participantDay, phase, completedWeeks, average } from "../lib/program.mjs";
+import {
+  programDay,
+  participantDay,
+  phase,
+  completedWeeks,
+  average,
+} from "../lib/program.mjs";
 test("participants invited on different dates follow independent timelines", () => {
   const now = new Date("2026-10-10T12:00:00Z");
-  assert.equal(participantDay("2026-10-10T09:00:00Z", "Europe/Amsterdam", now), 1);
-  assert.equal(participantDay("2026-10-07T09:00:00Z", "Europe/Amsterdam", now), 4);
-  assert.deepEqual(completedWeeks(participantDay("2026-10-03T09:00:00Z", "Europe/Amsterdam", now)), [1]);
+  assert.equal(
+    participantDay("2026-10-10T09:00:00Z", "Europe/Amsterdam", now),
+    1,
+  );
+  assert.equal(
+    participantDay("2026-10-07T09:00:00Z", "Europe/Amsterdam", now),
+    4,
+  );
+  assert.deepEqual(
+    completedWeeks(
+      participantDay("2026-10-03T09:00:00Z", "Europe/Amsterdam", now),
+    ),
+    [1],
+  );
 });
 test("invitation date uses the participant timezone and advances at local midnight", () => {
   const invited = "2026-10-07T00:30:00Z";
-  assert.equal(participantDay(invited, "America/New_York", new Date(invited)), 1);
-  assert.equal(participantDay(invited, "America/New_York", new Date("2026-10-07T04:00:00Z")), 2);
-  assert.equal(participantDay("2026-10-24T22:30:00Z", "Europe/Amsterdam", new Date("2026-10-25T23:30:00Z")), 2);
+  assert.equal(
+    participantDay(invited, "America/New_York", new Date(invited)),
+    1,
+  );
+  assert.equal(
+    participantDay(
+      invited,
+      "America/New_York",
+      new Date("2026-10-07T04:00:00Z"),
+    ),
+    2,
+  );
+  assert.equal(
+    participantDay(
+      "2026-10-24T22:30:00Z",
+      "Europe/Amsterdam",
+      new Date("2026-10-25T23:30:00Z"),
+    ),
+    2,
+  );
 });
 test("calendar days stay consistent over Amsterdam daylight saving transition", () => {
   assert.equal(
@@ -31,9 +65,12 @@ test("same instant can unlock different local cohort days", () => {
 test("phase boundaries and review completion", () => {
   assert.equal(phase(0), "Not started");
   assert.equal(phase(14), "Daily experiences");
-  assert.equal(phase(15), "Nourish & notice");
-  assert.equal(phase(29), "Reflect & celebrate");
-  assert.equal(phase(31), "Program complete");
+  assert.equal(phase(15), "Daily experiences");
+  assert.equal(phase(16), "Nourish & notice");
+  assert.equal(phase(28), "Nourish & notice");
+  assert.equal(phase(29), "Phase 3 · Sustain your rhythm");
+  assert.equal(phase(31), "Phase 3 · Sustain your rhythm");
+  assert.equal(phase(32), "Program complete");
   assert.deepEqual(completedWeeks(7), []);
   assert.deepEqual(completedWeeks(8), [1]);
   assert.deepEqual(completedWeeks(31), [1, 2, 3, 4]);
@@ -41,4 +78,15 @@ test("phase boundaries and review completion", () => {
 test("missing observations are not zero", () => {
   assert.equal(average([]), null);
   assert.equal(average([3, 5]), 4);
+});
+
+test("admin latest snapshot uses save time rather than averages or highest day", async () => {
+  const { latestCheckin } = await import("../lib/program.mjs");
+  const earlier = { day: 20, mood: 1, updated_at: "2026-10-27T08:00:00Z" };
+  const later = { day: 20, mood: 5, updated_at: "2026-10-27T18:00:00Z" };
+  assert.equal(latestCheckin([earlier, later]).mood, 5);
+  assert.equal(latestCheckin([later, earlier]).mood, 5);
+  assert.equal(latestCheckin([{ day: 21, updated_at: null }, later]).mood, 5);
+  assert.equal(latestCheckin([{ day: 1 }, { day: 2 }]).day, 2);
+  assert.equal(latestCheckin([]), null);
 });

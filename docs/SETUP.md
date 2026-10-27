@@ -63,3 +63,13 @@ Shared published content, the shared diet plan and meeting settings remain group
 Apply `supabase/migrations/003_multiple_checkins.sql` after migrations 001 and 002 before deploying the multiple-check-in UI/API. Every explicit Add check-in appends a private timestamped mood, energy, sleep and note entry and atomically updates the existing daily summary. Habit changes update only that summary. Weekly charts and AI continue to use the latest daily summary, so frequent check-ins do not inflate completed days. Existing records are preserved without invented historical timestamps.
 
 Cloud verification still required: save two entries on the same day, refresh and confirm both remain; confirm another participant and admins cannot read entry notes/history; confirm future/out-of-program day inserts fail; confirm habit updates do not append entries.
+
+## Phase 2 lifestyle checklist
+
+Apply migration 004 after 003 before deploying. Phase 1: Days 1–15. Phase 2: Days 16–28, unlocked by personal program day, with independent daily completed/skipped states. Closing Days 29–30 remain unchanged. No activity completion requirement blocks access. Verify two-participant isolation, direct database writes before Day 16 and after program completion, and refresh persistence in a configured test project. These cloud authorization checks have not yet been executed.
+
+In local sample-data development only, `?previewDay=15` and `?previewDay=16` simulate the boundary for browser testing. This has no effect on production or configured Supabase accounts.
+
+Apply migration 005 after 004 to enable Day 31, retain phase-based database access checks and stamp new daily summary saves. Phase 3 opens Day 29 and repeats the checklist through Day 31. Admin latest-score queries exclude private notes and entry history. Validate multiple same-day saves, latest admin updates, participant isolation, phase boundaries, and Day 31/32 in a test Supabase project before production deployment. Historical summaries without a save timestamp fall back to program-day ordering.
+
+Production schema update applied on 27 October 2026: the combined final schema of migrations 004 and 005 was executed successfully through the Supabase SQL editor. Do not reapply these migrations manually to that project. Local phase-boundary and latest-summary tests passed; live cross-account authorization and repeated-save tests remain unverified.
