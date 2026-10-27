@@ -10,7 +10,6 @@ import {
   ArrowUpRight,
   ArrowRight,
   Check,
-  Plus,
   Play,
   ShieldCheck,
   LogOut,
@@ -18,8 +17,6 @@ import {
   Flame,
   Moon,
   Wind,
-  Footprints,
-  Target,
   Lock,
   ChevronLeft,
   ChevronRight,
@@ -58,11 +55,6 @@ const blankExperience: Experience = {
   alt: "",
   published: false,
 };
-const habits = [
-  { name: "Movement", icon: Footprints },
-  { name: "Focus time", icon: Target },
-  { name: "Bedtime routine", icon: Moon },
-];
 export default function RhythmApp() {
   const [sessionError, setSessionError] = useState("");
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -78,7 +70,6 @@ export default function RhythmApp() {
     [selectedDay, setSelectedDay] = useState<number | null>(null),
     [editing, setEditing] = useState<Experience>(blankExperience),
     [tab, setTab] = useState("instructions"),
-    [customHabit, setCustomHabit] = useState(""),
     [participants, setParticipants] = useState<
       {
         name: string;
@@ -1029,81 +1020,6 @@ export default function RhythmApp() {
                   </span>
                 </section>
               </div>
-              <section className="card habits">
-                <div className="section-heading">
-                  <div>
-                    <h2>Little rituals, meaningful days</h2>
-                    <p>Make room for what supports you.</p>
-                  </div>
-                  <span className="soft-tag">TODAY’S HABITS</span>
-                </div>
-                <div className="habit-grid">
-                  {[
-                    ...habits,
-                    ...form.habits
-                      .filter((n) => !habits.some((h) => h.name === n))
-                      .map((name) => ({ name, icon: Plus })),
-                  ].map((h) => (
-                    <button
-                      disabled={day < 1 || day > 30 || busy}
-                      className={
-                        form.habits.includes(h.name) ? "habit checked" : "habit"
-                      }
-                      key={h.name}
-                      onClick={() => {
-                        const f = {
-                          ...form,
-                          habits: form.habits.includes(h.name)
-                            ? form.habits.filter((n) => n !== h.name)
-                            : [...form.habits, h.name],
-                        };
-                        mutate("checkin", f, {
-                          ...store,
-                          checkins: [
-                            ...checks.filter((c) => c.day !== shown),
-                            f,
-                          ],
-                        });
-                      }}
-                    >
-                      <h.icon size={23} />
-                      <span>{h.name}</span>
-                      <span className="check-circle">
-                        {form.habits.includes(h.name) && <Check size={14} />}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                <form
-                  className="inline-form"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const name = customHabit.trim();
-                    if (!name || form.habits.includes(name)) return;
-                    const f = { ...form, habits: [...form.habits, name] };
-                    mutate("checkin", f, {
-                      ...store,
-                      checkins: [...checks.filter((c) => c.day !== shown), f],
-                    });
-                    setCustomHabit("");
-                  }}
-                >
-                  <input
-                    aria-label="Custom habit name"
-                    placeholder="Add a personal ritual…"
-                    maxLength={60}
-                    value={customHabit}
-                    onChange={(e) => setCustomHabit(e.target.value)}
-                  />
-                  <button
-                    className="secondary"
-                    disabled={busy || day < 1 || day > 30}
-                  >
-                    <Plus size={16} />
-                    Add & complete
-                  </button>
-                </form>
-              </section>
               <footer className="page-footer">
                 <Leaf size={15} /> Progress isn’t always a straight line. You
                 belong here, wherever you are today.
