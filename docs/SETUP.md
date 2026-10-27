@@ -73,3 +73,7 @@ In local sample-data development only, `?previewDay=15` and `?previewDay=16` sim
 Apply migration 005 after 004 to enable Day 31, retain phase-based database access checks and stamp new daily summary saves. Phase 3 opens Day 29 and repeats the checklist through Day 31. Admin latest-score queries exclude private notes and entry history. Validate multiple same-day saves, latest admin updates, participant isolation, phase boundaries, and Day 31/32 in a test Supabase project before production deployment. Historical summaries without a save timestamp fall back to program-day ordering.
 
 Production schema update applied on 27 October 2026: the combined final schema of migrations 004 and 005 was executed successfully through the Supabase SQL editor. Do not reapply these migrations manually to that project. Local phase-boundary and latest-summary tests passed; live cross-account authorization and repeated-save tests remain unverified.
+
+## Access hardening release
+
+Migration 006 applied successfully in production on 27 October 2026. Deploy the matching state API, which uses the authorized `cohort_progress` RPC for admin summaries. Live read-only authorization checks passed. See ACCESS_CONTROL.md and supabase/tests/live_access_readonly.sql. The synthetic write suite in supabase/tests/access.sql is for an isolated test project only and remains pending. Never report this as full end-to-end authorization verification.

@@ -48,3 +48,7 @@ The design uses Beautiful UI as a visual reference; no Beautiful UI source compo
 ## Verification
 
 TypeScript check, production build, and ten calendar, personal-timeline, and origin tests passed. Browser checks covered saving and refreshing a synthetic check-in, draft visibility, future-day locking, and desktop/mobile layout. Database policies and provider calls remain unverified until services are configured.
+
+## Access control hardening — 27 October 2026
+
+Record-level authorization is required on every data operation, independent of UI visibility. See [access inventory](docs/ACCESS_CONTROL.md) for every page, endpoint, table and privileged exception. Migration 006 adds explicit least-privilege grants and scheduled private-note writes. Applied to production after 005 on 27 October 2026. Live read-only record-isolation, admin-scope, anonymous-denial and escalation-denial probes passed; synthetic write tests in an isolated project remain pending.

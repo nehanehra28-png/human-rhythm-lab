@@ -22,11 +22,19 @@ export async function GET(req: NextRequest) {
     const today = participantDay(m.started_at, m.timezone);
     const results = await Promise.all([
       db.from("cohorts").select("*").eq("id", m.cohort_id).single(),
-      db
-        .from("experiences")
-        .select("*")
-        .eq("cohort_id", m.cohort_id)
-        .order("day"),
+      m.role === "admin"
+        ? db
+            .from("experiences")
+            .select("*")
+            .eq("cohort_id", m.cohort_id)
+            .order("day")
+        : db
+            .from("experiences")
+            .select("*")
+            .eq("cohort_id", m.cohort_id)
+            .eq("published", true)
+            .lte("day", today)
+            .order("day"),
       db
         .from("checkins")
         .select("*")
@@ -74,15 +82,21 @@ export async function GET(req: NextRequest) {
         .select("user_id,display_name,started_at,timezone")
         .eq("cohort_id", m.cohort_id)
         .eq("role", "participant");
-      const { data: entries, error: ce } = await db
-        .from("checkins")
-        .select("user_id,mood,energy,sleep,day,status,updated_at")
-        .eq("cohort_id", m.cohort_id);
+      const { data: entries, error: ce } = await db.rpc("cohort_progress", {
+        cohort: m.cohort_id,
+      });
       if (me || ce) throw Error("Could not load cohort progress.");
+      const scores = (entries || []) as {
+        user_id: string;
+        mood: number;
+        energy: number;
+        sleep: number;
+        day: number;
+        status: string;
+        updated_at: string | null;
+      }[];
       participants = (members || []).map((person) => {
-        const rows = (entries || []).filter(
-          (e) => e.user_id === person.user_id,
-        );
+        const rows = scores.filter((e) => e.user_id === person.user_id);
         const latest = latestCheckin(rows);
         return {
           latestAt: latest?.updated_at || null,

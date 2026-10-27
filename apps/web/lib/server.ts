@@ -18,10 +18,16 @@ export async function authorized(req: NextRequest) {
     .select("*")
     .eq("user_id", data.user.id)
     .single();
-  if (memberError || !membership)
+  if (
+    memberError ||
+    !membership ||
+    !["participant", "admin"].includes(membership.role)
+  )
     throw Error("Your account has not been assigned to a cohort.");
   if (!membership.started_at)
-    throw Error("Personal timelines need database migration 002_personal_timelines.sql. Ask your administrator to apply it.");
+    throw Error(
+      "Personal timelines need database migration 002_personal_timelines.sql. Ask your administrator to apply it.",
+    );
   return { db, user: data.user, membership };
 }
 export function failure(error: unknown) {

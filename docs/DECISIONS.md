@@ -58,3 +58,7 @@ Phase 1 ends on Day 15; Phase 2 unlocks on each participant’s Day 16, independ
 ## Three-phase update — 27 October 2026
 
 The experience lasts 31 days: Phase 1 Days 1–15, Phase 2 Days 16–28, Phase 3 Days 29–31. Each phase unlocks only on its first personal program day; completion of activities is not a prerequisite. Phase 3 repeats the daily lifestyle checklist. Multiple timestamped check-ins are allowed throughout all 31 days. The latest saved daily snapshot drives admin mood, energy, sleep and response, refreshed every 30 seconds while the admin view is open. Notes and entry history remain owner-only. Historical summaries have no invented save timestamp. Apply migrations 004 and 005 before deployment.
+
+## Access control hardening — 27 October 2026
+
+Record-level authorization is required on every data operation, independent of UI visibility. See [access inventory](ACCESS_CONTROL.md) for every page, endpoint, table and privileged exception. Migration 006 adds explicit least-privilege grants and scheduled private-note writes. Applied to production after 005 on 27 October 2026. Live read-only record-isolation, admin-scope, anonymous-denial and escalation-denial probes passed; synthetic write tests in an isolated project remain pending.
