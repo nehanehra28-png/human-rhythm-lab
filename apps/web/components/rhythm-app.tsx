@@ -371,7 +371,14 @@ export default function RhythmApp() {
     return (
       <main className="login">
         <div className="brand">
-          <Leaf /> Human Rhythm Lab
+          <img
+            className="brand-logo"
+            src="/human-rhythm-lab-logo.png"
+            alt=""
+            width={42}
+            height={42}
+          />{" "}
+          The Human Rhythm Lab
         </div>
         <div className="login-card">
           <span className="eyebrow">YOUR 30-DAY EXPERIENCE</span>
@@ -490,10 +497,16 @@ export default function RhythmApp() {
       <aside className="sidebar">
         <a className="brand" href="/" aria-label="Human Rhythm Lab home">
           <span className="brand-icon">
-            <Leaf size={23} />
+            <img
+              className="brand-logo"
+              src="/human-rhythm-lab-logo.png"
+              alt=""
+              width={42}
+              height={42}
+            />
           </span>
           <span>
-            human rhythm<span className="brand-sub">LAB</span>
+            The Human Rhythm<span className="brand-sub">Lab</span>
           </span>
         </a>
         <div className="cohort-label">THE 30-DAY EXPERIENCE</div>
@@ -554,29 +567,14 @@ export default function RhythmApp() {
       </aside>
       <div className="main-shell">
         <header className="topbar">
-          <div>
-            <span className="breadcrumb">Your space</span>
-            <span>/</span>
-            <strong>
-              {view === "today"
-                ? "My dashboard"
-                : view === "week"
-                  ? "Weekly reflections"
-                  : view === "program"
-                    ? "My experience"
-                    : view === "admin"
-                      ? "Admin workspace"
-                      : "Account"}
-            </strong>
-          </div>
-          <span className="top-date">
-            <Sun size={16} />{" "}
-            {new Intl.DateTimeFormat("en", {
-              month: "short",
-              day: "numeric",
-              timeZone: store.settings.timezone,
-            }).format(new Date())}
-          </span>
+          <img
+            className="header-logo"
+            src="/human-rhythm-lab-logo.png"
+            alt="The Human Rhythm Lab"
+            width={30}
+            height={30}
+          />
+          <span>Human Rhythm Reset Experience</span>
         </header>
         {demo && (
           <div className="demo-banner">

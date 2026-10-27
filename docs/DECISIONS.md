@@ -46,3 +46,7 @@ Updated: 15 October 2026.
 ## Implementation status
 
 Live admin sign-in and publication are verified; invitation delivery, media, isolation and AI testing remain pending. Personal timeline migration 002 must be applied to the existing Supabase project. See README.md and SETUP.md for verification and setup. Do not treat preview checks as cloud-security verification.
+
+## Brand and readability update — 27 October 2026
+
+Use the official transparent logo from https://thehumanrhythmlab.com/ (stored in apps/web/public/human-rhythm-lab-logo.png). The reference palette uses warm cream oklch(93.7% .018 80), forest green oklch(34% .045 155), and dark neutral foregrounds. Header: Human Rhythm Reset Experience. Small labels use a 12px minimum and darker foreground colors.
