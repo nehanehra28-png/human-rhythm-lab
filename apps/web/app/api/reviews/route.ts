@@ -1,11 +1,17 @@
-import { createClient } from "@supabase/supabase-js";
 import { completedWeeks, participantDay } from "../../../lib/program.mjs";
+import { validatedReflection } from "../../../lib/request-security.mjs";
+import { enforceBudget, serviceDatabase } from "../../../lib/budgets";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (process.env.AI_REVIEWS_ENABLED !== "true")
+    return Response.json(
+      { error: "AI reflections are disabled for this pilot." },
+      { status: 503 },
+    );
   const key = process.env.OPENROUTER_API_KEY,
     model = process.env.OPENROUTER_MODEL,
     url = process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -15,7 +21,16 @@ export async function GET(req: Request) {
       { error: "Weekly AI is not configured." },
       { status: 503 },
     );
-  const db = createClient(url, service, { auth: { persistSession: false } });
+  let db;
+  try {
+    await enforceBudget(req, "scheduled-reviews", "ai");
+    db = serviceDatabase();
+  } catch {
+    return Response.json(
+      { error: "Review service unavailable." },
+      { status: 503 },
+    );
+  }
   const { data: members, error } = await db
     .from("memberships")
     .select("user_id,cohort_id,timezone,started_at")
@@ -85,6 +100,15 @@ export async function GET(req: Request) {
           generated++;
           continue;
         }
+        const input = JSON.stringify({ week, records: rows });
+        if (new TextEncoder().encode(input).byteLength > 16000)
+          throw Error("Review input too large.");
+        const { error: budgetError } = await db.rpc("consume_review_attempt", {
+          participant: member.user_id,
+          cohort: member.cohort_id,
+          program_week: week,
+        });
+        if (budgetError) throw Error("Review budget unavailable.");
         const response = await fetch(
           "https://openrouter.ai/api/v1/chat/completions",
           {
@@ -109,7 +133,7 @@ export async function GET(req: Request) {
                 },
                 {
                   role: "user",
-                  content: JSON.stringify({ week, records: rows }),
+                  content: input,
                 },
               ],
             }),
@@ -120,18 +144,16 @@ export async function GET(req: Request) {
         const parsed = JSON.parse(
           answer.choices?.[0]?.message?.content || "{}",
         );
-        if (
-          typeof parsed.reflection !== "string" ||
-          parsed.reflection.length < 10 ||
-          parsed.reflection.length > 2500
-        )
-          throw Error("Invalid reflection");
+        const reflection = validatedReflection(parsed);
         const { error: saveError } = await db
           .from("reviews")
           .update({
             status: "completed",
-            reflection: parsed.reflection,
-            model: answer.model || model,
+            reflection,
+            model:
+              typeof answer.model === "string" && answer.model.length <= 100
+                ? answer.model
+                : model,
             prompt_version: "1",
             updated_at: new Date().toISOString(),
           })

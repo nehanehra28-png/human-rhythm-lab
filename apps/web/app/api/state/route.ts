@@ -2,7 +2,8 @@ import {
   canSavePhaseTwo,
   validPhaseTwoItems,
 } from "../../../lib/phase-two.mjs";
-import { createClient } from "@supabase/supabase-js";
+import { readJsonObject } from "../../../lib/request-security.mjs";
+import { enforceBudget, serviceDatabase } from "../../../lib/budgets";
 import type { NextRequest } from "next/server";
 import {
   authorized,
@@ -19,6 +20,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
     const { db, user, membership: m } = await authorized(req);
+    await enforceBudget(req, user.id, "read");
     const today = participantDay(m.started_at, m.timezone);
     const results = await Promise.all([
       db.from("cohorts").select("*").eq("id", m.cohort_id).single(),
@@ -146,9 +148,15 @@ export async function POST(req: NextRequest) {
     if (!sameOrigin(req))
       return Response.json({ error: "Invalid origin." }, { status: 403 });
     const { db, user, membership: m } = await authorized(req);
-    const body = await req.text();
-    if (body.length > 40000) throw Error("Request too large.");
-    const { action, payload: p } = JSON.parse(body);
+    await enforceBudget(req, user.id, "write");
+    const { action, payload: p } = await readJsonObject(req, 40000);
+    if (
+      typeof action !== "string" ||
+      !p ||
+      typeof p !== "object" ||
+      Array.isArray(p)
+    )
+      throw Error("Invalid request.");
     let error;
     if (action === "checkin" || action === "checkinEntry") {
       const today = participantDay(m.started_at, m.timezone);
@@ -214,6 +222,8 @@ export async function POST(req: NextRequest) {
         { onConflict: "user_id,cohort_id,day" },
       ));
     } else if (action === "timezone") {
+      if (typeof p.timezone !== "string" || p.timezone.length > 100)
+        throw Error("Invalid timezone.");
       try {
         new Intl.DateTimeFormat("en", { timeZone: p.timezone }).format();
       } catch {
@@ -310,19 +320,26 @@ export async function POST(req: NextRequest) {
         )
       )
         throw Error("Invalid feedback.");
-      ({ error } = await db
-        .from("feedback")
-        .upsert(
-          { user_id: user.id, cohort_id: m.cohort_id, answers: p },
-          { onConflict: "user_id,cohort_id" },
-        ));
+      ({ error } = await db.from("feedback").upsert(
+        {
+          user_id: user.id,
+          cohort_id: m.cohort_id,
+          answers: {
+            rating: p.rating,
+            useful: p.useful,
+            ease: p.ease,
+            changes: p.changes,
+            improve: p.improve,
+          },
+        },
+        { onConflict: "user_id,cohort_id" },
+      ));
     } else if (action === "retryReviews") {
       if (m.role !== "admin") throw Error("Admin access required.");
-      const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      if (!key) throw Error("Weekly reviews are not configured.");
-      const service = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key, {
-        auth: { persistSession: false },
-      });
+      if (process.env.AI_REVIEWS_ENABLED !== "true")
+        throw Error("Security services unavailable.");
+      await enforceBudget(req, user.id, "retry");
+      const service = serviceDatabase();
       ({ error } = await service
         .from("reviews")
         .update({ status: "pending", updated_at: "1970-01-01T00:00:00Z" })

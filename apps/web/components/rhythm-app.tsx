@@ -33,7 +33,7 @@ import {
   average,
   completedWeeks,
 } from "../lib/program.mjs";
-import { supabase } from "../lib/supabase";
+import { supabase, databaseConfigurationBlocked } from "../lib/supabase";
 const commonTimezones = [
   { value: "America/Los_Angeles", label: "Pacific Time (PT)" },
   { value: "America/New_York", label: "Eastern Time (ET)" },
@@ -95,7 +95,10 @@ export default function RhythmApp() {
     diet: false,
   });
   const [cohortId, setCohortId] = useState("");
-  const demo = !supabase && process.env.NODE_ENV === "development";
+  const demo =
+    !supabase &&
+    !databaseConfigurationBlocked &&
+    process.env.NODE_ENV === "development";
   useEffect(() => {
     if (demo) {
       try {
@@ -319,11 +322,19 @@ export default function RhythmApp() {
     setBusy(true);
     try {
       if (file.size > 50 * 1024 * 1024) throw Error("File too large");
-      const ext = file.name.split(".").pop();
-      const path = `${cohortId}/${crypto.randomUUID()}.${ext}`;
+      const response = await fetch("/api/uploads", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ kind, mime: file.type, size: file.size }),
+      });
+      if (!response.ok) throw Error("Upload unavailable.");
+      const { path, uploadToken } = await response.json();
       const { error } = await supabase!.storage
         .from("program-media")
-        .upload(path, file);
+        .uploadToSignedUrl(path, uploadToken, file, { contentType: file.type });
       if (error) throw error;
       setEditing((e) => ({ ...e, [kind]: `storage:${path}` }));
       setMessage("Uploaded. Save the experience to attach this file.");

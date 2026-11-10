@@ -1,4 +1,7 @@
 import { matchesRequestOrigin } from "./origin.mjs";
+import { publicFailure } from "./request-security.mjs";
+import { databaseAllowed } from "./environment.mjs";
+import { enforceIngress } from "./budgets";
 import { createClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
 export async function authorized(req: NextRequest) {
@@ -6,7 +9,17 @@ export async function authorized(req: NextRequest) {
     key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   const token = req.headers.get("authorization")?.replace(/^Bearer /, "");
   if (!url || !key) throw Error("Cloud services are not configured.");
+  if (
+    !databaseAllowed({
+      url,
+      nodeEnv: process.env.NODE_ENV,
+      vercelEnv: process.env.VERCEL_ENV,
+      developmentRef: process.env.NEXT_PUBLIC_SUPABASE_DEV_PROJECT_REF,
+    })
+  )
+    throw Error("Security services unavailable.");
   if (!token) throw Error("Sign in required.");
+  await enforceIngress(req);
   const db = createClient(url, key, {
     global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false, autoRefreshToken: false },
@@ -31,15 +44,12 @@ export async function authorized(req: NextRequest) {
   return { db, user: data.user, membership };
 }
 export function failure(error: unknown) {
-  const message = error instanceof Error ? error.message : "Request failed.";
+  const result = publicFailure(error);
   return Response.json(
-    { error: message },
+    { error: result.error },
     {
-      status: message.includes("Sign in")
-        ? 401
-        : message.includes("Admin")
-          ? 403
-          : 400,
+      status: result.status,
+      headers: { "Cache-Control": "no-store" },
     },
   );
 }
