@@ -10,7 +10,10 @@ export async function POST(req: NextRequest) {
     const { user, membership } = await authorized(req);
     if (membership.role !== "admin") throw Error("Admin access required.");
     if (process.env.PROGRAM_UPLOADS_ENABLED !== "true")
-      throw Error("Security services unavailable.");
+      return Response.json(
+        { error: "File uploads are currently disabled. Your existing media has not changed." },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
+      );
     const p = await readJsonObject(req, 1000);
     const formats: Record<string, string> = {
       "image/png": "png",
