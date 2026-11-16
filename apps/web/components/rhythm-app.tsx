@@ -214,6 +214,23 @@ export default function RhythmApp() {
         },
       );
   }, [store, shown]);
+  async function signOut() {
+    if (!supabase || busy) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const { error } = await supabase.auth.signOut({ scope: "local" });
+      if (error) throw error;
+      setToken("");
+      setStore(null);
+      setParticipants([]);
+      setView("today");
+    } catch {
+      setMessage("Could not sign out. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
   async function mutate(action: string, payload: unknown, next: Store) {
     if (busy) return;
     setBusy(true);
@@ -609,7 +626,8 @@ export default function RhythmApp() {
             {!demo && (
               <button
                 aria-label="Sign out"
-                onClick={() => supabase!.auth.signOut()}
+                disabled={busy}
+                onClick={() => void signOut()}
               >
                 <LogOut size={18} />
               </button>
@@ -1810,6 +1828,24 @@ export default function RhythmApp() {
                   is confirmed.
                 </p>
               </section>
+              {!demo && (
+                <section className="card account-card">
+                  <h2>Sign out</h2>
+                  <p>
+                    Sign out on this browser. Your saved progress will be here
+                    when you sign in again.
+                  </p>
+                  <button
+                    type="button"
+                    className="secondary"
+                    disabled={busy}
+                    onClick={() => void signOut()}
+                  >
+                    <LogOut size={18} aria-hidden="true" />
+                    Sign out
+                  </button>
+                </section>
+              )}
               <section className="card account-card">
                 <h2>Your data</h2>
                 <p>
