@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     )
       throw Error("Invalid upload.");
     // Always reserve a FULL 50MiB slot: never trust the browser's claimed size.
-    // Two tokens/day cap reserved storage at100MiB, even if every size is forged.
+    // Fifteen tokens/day cap reserved storage at750MiB, even if every size is forged.
     await enforceBudget(req, user.id, "upload");
     const path = `${membership.cohort_id}/${randomUUID()}.${formats[p.mime]}`;
     const { data, error } = await serviceDatabase()
