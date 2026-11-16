@@ -1,5 +1,6 @@
 "use client";
 import { phaseTwoGroups } from "../lib/phase-two.mjs";
+import { mediaBlocksSave } from "../lib/media-upload.mjs";
 import { useEffect, useState } from "react";
 import {
   Leaf,
@@ -57,6 +58,9 @@ const blankExperience: Experience = {
   published: false,
 };
 export default function RhythmApp() {
+  const [uploadStatuses, setUploadStatuses] = useState<Record<
+    "video" | "infographic", "idle" | "uploading" | "uploaded" | "failed" | "saved"
+  >>({ video: "idle", infographic: "idle" });
   const [sessionError, setSessionError] = useState("");
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [otpDestination, setOtpDestination] = useState("");
@@ -262,6 +266,12 @@ export default function RhythmApp() {
         }
       }
       setMessage("Saved successfully.");
+      if (action === "experience") {
+        setUploadStatuses((statuses) => ({
+          video: statuses.video === "uploaded" ? "saved" : statuses.video,
+          infographic: statuses.infographic === "uploaded" ? "saved" : statuses.infographic,
+        }));
+      }
     } catch (e) {
       setMessage(
         e instanceof Error ? e.message : "Could not save. Please try again.",
@@ -330,6 +340,7 @@ export default function RhythmApp() {
     }
   }
   async function media(file: File, kind: "video" | "infographic") {
+    if (busy) return;
     if (demo) {
       setMessage(
         "Uploads need a connected storage account. You can test with an HTTPS media URL below.",
@@ -337,6 +348,8 @@ export default function RhythmApp() {
       return;
     }
     setBusy(true);
+    setMessage("");
+    setUploadStatuses((statuses) => ({ ...statuses, [kind]: "uploading" }));
     try {
       if (file.size > 50 * 1024 * 1024) throw Error("File too large");
       const response = await fetch("/api/uploads", {
@@ -348,6 +361,7 @@ export default function RhythmApp() {
         body: JSON.stringify({ kind, mime: file.type, size: file.size }),
       });
       if (!response.ok) {
+        setUploadStatuses((statuses) => ({ ...statuses, [kind]: "failed" }));
         setMessage(
           response.status === 503
             ? "File uploads are currently unavailable. Your existing video and image have not changed."
@@ -363,8 +377,10 @@ export default function RhythmApp() {
         .uploadToSignedUrl(path, uploadToken, file, { contentType: file.type });
       if (error) throw error;
       setEditing((e) => ({ ...e, [kind]: `storage:${path}` }));
+      setUploadStatuses((statuses) => ({ ...statuses, [kind]: "uploaded" }));
       setMessage("Uploaded. Save the experience to attach this file.");
     } catch {
+      setUploadStatuses((statuses) => ({ ...statuses, [kind]: "failed" }));
       setMessage(
         "Upload failed. Use MP4/WebM or PNG/JPEG/WebP files up to 50 MB, and check storage setup.",
       );
@@ -402,7 +418,10 @@ export default function RhythmApp() {
     };
   }, [exp?.video, exp?.infographic]);
   function navigate(v: View) {
-    if (v === "admin" && store)
+    if (busy) return;
+    if (v === "admin" && store && !Object.values(uploadStatuses).some(
+      (status) => ["uploaded", "uploading", "failed"].includes(status),
+    ))
       setEditing(
         store.experiences.find((e) => e.day === editing.day) || {
           ...blankExperience,
@@ -1576,7 +1595,11 @@ export default function RhythmApp() {
                   <div className="editor-select">
                     <select
                       aria-label="Choose experience to edit"
-                      onChange={(e) =>
+                      disabled={busy || Object.values(uploadStatuses).some(
+                        (status) => status === "uploaded" || status === "failed",
+                      )}
+                      onChange={(e) => {
+                        setUploadStatuses({ video: "idle", infographic: "idle" });
                         setEditing(
                           store.experiences.find(
                             (x) => x.day === Number(e.target.value),
@@ -1584,8 +1607,8 @@ export default function RhythmApp() {
                             ...blankExperience,
                             day: Number(e.target.value),
                           },
-                        )
-                      }
+                        );
+                      }}
                       value={editing.day}
                     >
                       {Array.from({ length: 15 }, (_, i) => (
@@ -1606,6 +1629,10 @@ export default function RhythmApp() {
                     className="admin-form"
                     onSubmit={(e) => {
                       e.preventDefault();
+                      if (busy || mediaBlocksSave(uploadStatuses)) {
+                        setMessage("Finish or retry your uploads, or choose to keep the existing media, before saving.");
+                        return;
+                      }
                       const content = {
                         ...editing,
                         alt:
@@ -1659,14 +1686,18 @@ export default function RhythmApp() {
                           {kind === "video" ? "Video" : "Infographic"}
                           <input
                             aria-label={`${kind} HTTPS URL`}
+                            disabled={busy}
                             placeholder="HTTPS URL or upload below"
                             value={editing[kind]}
-                            onChange={(e) =>
-                              setEditing({ ...editing, [kind]: e.target.value })
-                            }
+                            onChange={(e) => {
+                              setEditing({ ...editing, [kind]: e.target.value });
+                              setUploadStatuses((statuses) => ({ ...statuses, [kind]: "idle" }));
+                            }}
                           />
                           <input
                             type="file"
+                            disabled={busy}
+                            aria-label={`Upload ${kind === "video" ? "video" : "infographic"}`}
                             accept={
                               kind === "video"
                                 ? "video/mp4,video/webm"
@@ -1674,9 +1705,27 @@ export default function RhythmApp() {
                             }
                             onChange={(e) => {
                               const file = e.target.files?.[0];
+                              e.currentTarget.value = "";
                               if (file) media(file, kind);
                             }}
                           />
+                          <span role="status">
+                            {uploadStatuses[kind] === "uploading" && "Uploading… Please wait before saving."}
+                            {uploadStatuses[kind] === "uploaded" && "Uploaded — click Save & publish to attach this file."}
+                            {uploadStatuses[kind] === "saved" && "New file saved to this experience."}
+                            {uploadStatuses[kind] === "failed" && "Upload failed — the replacement was not attached. Retry or keep the existing file."}
+                          </span>
+                          {(uploadStatuses[kind] === "failed" || uploadStatuses[kind] === "uploaded") && (
+                            <button type="button" className="secondary" disabled={busy}
+                              onClick={() => {
+                                const saved = store.experiences.find((experience) => experience.day === editing.day);
+                                setEditing((experience) => ({ ...experience, [kind]: saved?.[kind] || "" }));
+                                setUploadStatuses((statuses) => ({ ...statuses, [kind]: "idle" }));
+                                setMessage("Keeping the previously saved media. The replacement will not be attached.");
+                              }}>
+                              Keep existing {kind === "video" ? "video" : "image"}
+                            </button>
+                          )}
                         </label>
                       ))}
                     </details>
@@ -1693,7 +1742,7 @@ export default function RhythmApp() {
                       />
                       Publish to cohort (content reviewed by your team)
                     </label>
-                    <button className="primary" disabled={busy}>
+                    <button className="primary" disabled={busy || mediaBlocksSave(uploadStatuses)}>
                       Save {editing.published ? "& publish" : "draft"}{" "}
                       <Check size={16} />
                     </button>
