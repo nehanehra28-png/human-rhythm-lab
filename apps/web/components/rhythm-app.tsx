@@ -347,7 +347,16 @@ export default function RhythmApp() {
         },
         body: JSON.stringify({ kind, mime: file.type, size: file.size }),
       });
-      if (!response.ok) throw Error("Upload unavailable.");
+      if (!response.ok) {
+        setMessage(
+          response.status === 503
+            ? "File uploads are currently unavailable. Your existing video and image have not changed."
+            : response.status === 429
+              ? "Upload limit reached. Please try again tomorrow. Your existing media has not changed."
+              : "Upload failed. Check the file type and size, then try again. Your existing media has not changed.",
+        );
+        return;
+      }
       const { path, uploadToken } = await response.json();
       const { error } = await supabase!.storage
         .from("program-media")
