@@ -79,7 +79,7 @@ export function enforceBudget(
     read: [120, 240, 60],
     write: [30, 60, 60],
     invite: [10, 10, 3600],
-    upload: [2, 2, 86400],
+    upload: [15, 15, 86400],
     retry: [4, 8, 86400],
     ai: [1, 4, 60],
   }[action];
